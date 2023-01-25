@@ -135,6 +135,19 @@ def _is_transformer(estimator):
 def _is_resampler(estimator):
     return hasattr(estimator, "fit_resample")
 
+def is_clusterer(estimator):
+    """Return True if the given estimator is (probably) a cluster.
+    Parameters
+    ----------
+    estimator : estimator instance
+        Estimator object to test.
+    Returns
+    -------
+    out : bool
+        True if estimator is a cluster and False otherwise.
+    """
+    print(getattr(estimator, "_estimator_type", None))
+    return getattr(estimator, "_estimator_type", None) == "clusterer"
 
 def ARGTypeClassFactory(classname, prange, BaseClass=ARGType):
     """Dynamically create parameter type class.
@@ -204,6 +217,9 @@ def TPOTOperatorClassFactory(
         elif is_regressor(op_obj):
             class_profile["root"] = True
             optype = "Regressor"
+        elif is_clusterer(op_obj):
+            class_profile["root"] = True
+            optype = "Clusterer"    
         elif _is_selector(op_obj):
             optype = "Selector"
         elif _is_transformer(op_obj):
@@ -212,7 +228,7 @@ def TPOTOperatorClassFactory(
             optype = "Resampler"
         else:
             raise ValueError(
-                "optype must be one of: Classifier, Regressor, Selector, Transformer, or Resampler"
+                "optype must be one of: Classifier, Regressor, Clusterer, Selector, Transformer, or Resampler"
             )
 
         @classmethod
@@ -220,7 +236,7 @@ def TPOTOperatorClassFactory(
             """Return the operator type.
 
             Possible values:
-                "Classifier", "Regressor", "Selector", "Transformer"
+                "Classifier", "Regressor", "Clusterer", "Selector", "Transformer"
             """
             return optype
 
@@ -326,6 +342,7 @@ def TPOTOperatorClassFactory(
                             issubclass(doptype, BaseEstimator)
                             or is_classifier(doptype)
                             or is_regressor(doptype)
+                            or is_clusterer(doptype)
                             or _is_transformer(doptype)
                             or _is_resampler(doptype)
                             or issubclass(doptype, Kernel)
