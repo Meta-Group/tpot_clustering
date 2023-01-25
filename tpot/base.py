@@ -725,144 +725,143 @@ class TPOTBase(BaseEstimator):
         """
         self._fit_init()
         features, target = self._check_dataset(features, target, sample_weight)
-        
         self._init_pretest(features, target)
 
-        # # Randomly collect a subsample of training samples for pipeline optimization process.
-        # if self.subsample < 1.0:
-        #     features, _, target, _ = train_test_split(
-        #          features,
-        #          target,
-        #          train_size=self.subsample,
-        #          test_size=None,
-        #          random_state=self.random_state,
-        #      )
-        #     # Raise a warning message if the training size is less than 1500 when subsample is not default value
-        #     if features.shape[0] < 1500:
-        #         print(
-        #              "Warning: Although subsample can accelerate pipeline optimization process, "
-        #              "too small training sample size may cause unpredictable effect on maximizing "
-        #              "score in pipeline optimization process. Increasing subsample ratio may get "
-        #              "a more reasonable outcome from optimization process in TPOT."
-        #          )
+        # Randomly collect a subsample of training samples for pipeline optimization process.
+        if self.subsample < 1.0:
+            features, _, target, _ = train_test_split(
+                features,
+                target,
+                train_size=self.subsample,
+                test_size=None,
+                random_state=self.random_state,
+            )
+            # Raise a warning message if the training size is less than 1500 when subsample is not default value
+            if features.shape[0] < 1500:
+                print(
+                    "Warning: Although subsample can accelerate pipeline optimization process, "
+                    "too small training sample size may cause unpredictable effect on maximizing "
+                    "score in pipeline optimization process. Increasing subsample ratio may get "
+                    "a more reasonable outcome from optimization process in TPOT."
+                )
 
-        # # Set the seed for the GP run
-        # if self.random_state is not None:
-        #      random.seed(self.random_state)  # deap uses random
-        #      np.random.seed(self.random_state)
+        # Set the seed for the GP run
+        if self.random_state is not None:
+            random.seed(self.random_state)  # deap uses random
+            np.random.seed(self.random_state)
 
-        # self._start_datetime = datetime.now()
-        # self._last_pipeline_write = self._start_datetime
-        # self._toolbox.register(
-        #      "evaluate",
-        #      self._evaluate_individuals,
-        #      features=features,
-        #      target=target,
-        #      sample_weight=sample_weight,
-        #      groups=groups,
-        # )
+        self._start_datetime = datetime.now()
+        self._last_pipeline_write = self._start_datetime
+        self._toolbox.register(
+            "evaluate",
+            self._evaluate_individuals,
+            features=features,
+            target=target,
+            sample_weight=sample_weight,
+            groups=groups,
+        )
 
-        # # assign population, self._pop can only be not None if warm_start is enabled
-        # if not self._pop:
-        #     self._pop = self._toolbox.population(n=self.population_size)
+        # assign population, self._pop can only be not None if warm_start is enabled
+        if not self._pop:
+            self._pop = self._toolbox.population(n=self.population_size)
 
-        # def pareto_eq(ind1, ind2):
-        #     """Determine whether two individuals are equal on the Pareto front.
+        def pareto_eq(ind1, ind2):
+            """Determine whether two individuals are equal on the Pareto front.
 
-        #     Parameters
-        #     ----------
-        #     ind1: DEAP individual from the GP population
-        #         First individual to compare
-        #     ind2: DEAP individual from the GP population
-        #         Second individual to compare
+            Parameters
+            ----------
+            ind1: DEAP individual from the GP population
+                First individual to compare
+            ind2: DEAP individual from the GP population
+                Second individual to compare
 
-        #     Returns
-        #     ----------
-        #     individuals_equal: bool
-        #         Boolean indicating whether the two individuals are equal on
-        #         the Pareto front
+            Returns
+            ----------
+            individuals_equal: bool
+                Boolean indicating whether the two individuals are equal on
+                the Pareto front
 
-        #     """
-        #     return np.allclose(ind1.fitness.values, ind2.fitness.values)
+            """
+            return np.allclose(ind1.fitness.values, ind2.fitness.values)
 
-        # # Generate new pareto front if it doesn't already exist for warm start
-        # if not self.warm_start or not self._pareto_front:
-        #     self._pareto_front = tools.ParetoFront(similar=pareto_eq)
+        # Generate new pareto front if it doesn't already exist for warm start
+        if not self.warm_start or not self._pareto_front:
+            self._pareto_front = tools.ParetoFront(similar=pareto_eq)
 
-        # # Set lambda_ (offspring size in GP) equal to population_size by default
-        # if not self.offspring_size:
-        #     self._lambda = self.population_size
-        # else:
-        #     self._lambda = self.offspring_size
+        # Set lambda_ (offspring size in GP) equal to population_size by default
+        if not self.offspring_size:
+            self._lambda = self.population_size
+        else:
+            self._lambda = self.offspring_size
 
-        # # Start the progress bar
-        # if self.max_time_mins:
-        #     total_evals = self.population_size
-        # else:
-        #     total_evals = self._lambda * self.generations + self.population_size
+        # Start the progress bar
+        if self.max_time_mins:
+            total_evals = self.population_size
+        else:
+            total_evals = self._lambda * self.generations + self.population_size
 
-        # self._pbar = tqdm(
-        #     total=total_evals,
-        #     unit="pipeline",
-        #     leave=False,
-        #     file=self.log_file_,
-        #     disable=not (self.verbosity >= 2),
-        #     desc="Optimization Progress",
-        # )
+        self._pbar = tqdm(
+            total=total_evals,
+            unit="pipeline",
+            leave=False,
+            file=self.log_file_,
+            disable=not (self.verbosity >= 2),
+            desc="Optimization Progress",
+        )
 
-        # try:
-        #     with warnings.catch_warnings():
-        #         self._setup_memory()
-        #         warnings.simplefilter("ignore")
-        #         self._pop, _ = eaMuPlusLambda(
-        #             population=self._pop,
-        #             toolbox=self._toolbox,
-        #             mu=self.population_size,
-        #             lambda_=self._lambda,
-        #             cxpb=self.crossover_rate,
-        #             mutpb=self.mutation_rate,
-        #             ngen=self.generations,
-        #             pbar=self._pbar,
-        #             halloffame=self._pareto_front,
-        #             verbose=self.verbosity,
-        #             per_generation_function=self._check_periodic_pipeline,
-        #             log_file=self.log_file_,
-        #         )
+        try:
+            with warnings.catch_warnings():
+                self._setup_memory()
+                warnings.simplefilter("ignore")
+                self._pop, _ = eaMuPlusLambda(
+                    population=self._pop,
+                    toolbox=self._toolbox,
+                    mu=self.population_size,
+                    lambda_=self._lambda,
+                    cxpb=self.crossover_rate,
+                    mutpb=self.mutation_rate,
+                    ngen=self.generations,
+                    pbar=self._pbar,
+                    halloffame=self._pareto_front,
+                    verbose=self.verbosity,
+                    per_generation_function=self._check_periodic_pipeline,
+                    log_file=self.log_file_,
+                )
 
-        # # Allow for certain exceptions to signal a premature fit() cancellation
-        # except (KeyboardInterrupt, SystemExit, StopIteration) as e:
-        #     if self.verbosity > 0:
-        #         self._pbar.write("", file=self.log_file_)
-        #         self._pbar.write(
-        #             "{}\nTPOT closed prematurely. Will use the current best pipeline.".format(
-        #                 e
-        #             ),
-        #             file=self.log_file_,
-        #         )
-        # finally:
-        #     # clean population for the next call if warm_start=False
-        #     if not self.warm_start:
-        #         self._pop = []
-        #     # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
-        #     attempts = 10
-        #     for attempt in range(attempts):
-        #         try:
-        #             # Close the progress bar
-        #             # Standard truthiness checks won't work for tqdm
-        #             if not isinstance(self._pbar, type(None)):
-        #                 self._pbar.close()
+        # Allow for certain exceptions to signal a premature fit() cancellation
+        except (KeyboardInterrupt, SystemExit, StopIteration) as e:
+            if self.verbosity > 0:
+                self._pbar.write("", file=self.log_file_)
+                self._pbar.write(
+                    "{}\nTPOT closed prematurely. Will use the current best pipeline.".format(
+                        e
+                    ),
+                    file=self.log_file_,
+                )
+        finally:
+            # clean population for the next call if warm_start=False
+            if not self.warm_start:
+                self._pop = []
+            # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
+            attempts = 10
+            for attempt in range(attempts):
+                try:
+                    # Close the progress bar
+                    # Standard truthiness checks won't work for tqdm
+                    if not isinstance(self._pbar, type(None)):
+                        self._pbar.close()
 
-        #             self._update_top_pipeline()
-        #             self._summary_of_best_pipeline(features, target)
-        #             # Delete the temporary cache before exiting
-        #             self._cleanup_memory()
-        #             break
+                    self._update_top_pipeline()
+                    self._summary_of_best_pipeline(features, target)
+                    # Delete the temporary cache before exiting
+                    self._cleanup_memory()
+                    break
 
-        #         except (KeyboardInterrupt, SystemExit, Exception) as e:
-        #             # raise the exception if it's our last attempt
-        #             if attempt == (attempts - 1):
-        #                 raise e
-        #     return self
+                except (KeyboardInterrupt, SystemExit, Exception) as e:
+                    # raise the exception if it's our last attempt
+                    if attempt == (attempts - 1):
+                        raise e
+            return self
 
     def _setup_memory(self):
         """Setup Memory object for memory caching.
