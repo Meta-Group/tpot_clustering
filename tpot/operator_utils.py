@@ -146,7 +146,6 @@ def is_clusterer(estimator):
     out : bool
         True if estimator is a cluster and False otherwise.
     """
-    print(getattr(estimator, "_estimator_type", None))
     return getattr(estimator, "_estimator_type", None) == "clusterer"
 
 def ARGTypeClassFactory(classname, prange, BaseClass=ARGType):
