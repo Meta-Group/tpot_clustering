@@ -28,16 +28,91 @@ import numpy as np
 # Check the TPOT documentation for information on the structure of config dicts
 
 clustering_config_dict = {
-    # Models
-    'sklearn.cluster.KMeans': {
-        'n_clusters': [8],
-        'n_init':range(1,10),
-        'init':['k-means++','random'],
-        'algorithm': ['lloyd','elkan']
+
+    # Clusterers
+    'sklearn.cluster.AffinityPropagation': {
+        'damping': np.arange(0.5, 1.01, 0.05),
+        'max_iter': np.arange(100, 600, 100),
+        'convergence_iter': np.arange(5, 35, 5),
+        'affinity': ['euclidean', 'precomputed'],
+    },
+
+    'sklearn.cluster.AgglomerativeClustering': {
+        'n_clusters': range(1, 21),
+        'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
+        'linkage': ['ward', 'complete', 'average', 'single'],
+    },
+
+    'sklearn.cluster.Birch': {
+        'threshold': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'branching_factor': [1, 5, 10, 25, 50, 100],
+        'n_clusters': range(1, 21),
     },
 
     'sklearn.cluster.DBSCAN': {
+        'eps': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'min_samples': [1, 3, 5, 10, 25, 50],
+        'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
+        'leaf_size': [1,  5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+    },
 
+    'sklearn.cluster.FeatureAgglomeration': {
+        'n_clusters': range(1, 21),
+        'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
+        'linkage': ['ward', 'complete', 'average', 'single'],
+    },
+
+    'sklearn.cluster.KMeans': {
+        'n_clusters': range(1, 21),
+        'init': ['k-means++', 'random'],
+        'algorithm': ['lloyd', 'elkan'],
+        'max_iter': np.arange(100, 600, 100),
+    },
+
+    'sklearn.cluster.BisectingKMeans': {
+        'n_clusters': range(1, 21),
+        'init': ['k-means++', 'random'],
+        'algorithm': ['lloyd', 'elkan'],
+        'max_iter': np.arange(100, 600, 100),
+        'bisecting_strategy': ['biggest_inertia', 'largest_cluster'],
+    },
+
+    'sklearn.cluster.MiniBatchKMeans': {
+        'n_clusters': range(1, 21),
+        'init': ['k-means++', 'random'],
+        'max_iter': np.arange(100, 600, 100),
+    },
+
+    'sklearn.cluster.MeanShift': {
+        'max_iter': np.arange(100, 600, 100),
+        'min_bin_freq': [1, 3, 5, 10],
+        'cluster_all': [True, False],
+    },
+
+    'sklearn.cluster.OPTICS': {
+        'min_samples': [2, 3, 5, 10, 25, 50],
+        'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
+        'cluster_method': ['xi', 'dbscan'],
+        'leaf_size': [1,  5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+    },
+
+    'sklearn.cluster.SpectralClustering': {
+        'n_clusters': range(1, 21),
+        'eigen_solver': ['arpack', 'lobpcg', 'amg'],
+        'affinity': ['nearest_neighbors', 'rbf', 'precomputed', 'precomputed_nearest_neighbors'],
+    },
+
+    'sklearn.cluster.SpectralBiclustering': {
+        'n_clusters': range(1, 21),
+        'method': ['bistochastic', 'scale', 'log'],
+        'svd_method': ['randomized', 'arpack'],
+        'init': ['k-means++', 'random'],
+    },
+
+    'sklearn.cluster.SpectralCoclustering': {
+        'n_clusters': range(1, 21),
+        'svd_method': ['randomized', 'arpack'],
+        'init': ['k-means++', 'random'],
     },
 
     # Preprocessors
