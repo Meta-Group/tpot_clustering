@@ -30,7 +30,10 @@ import numpy as np
 clustering_config_dict = {
     # Models
     'sklearn.cluster.KMeans': {
-        
+        'n_clusters': [8],
+        'n_init':range(1,10),
+        'init':['k-means++','random'],
+        'algorithm': ['lloyd','elkan']
     },
 
     'sklearn.cluster.DBSCAN': {
