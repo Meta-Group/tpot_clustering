@@ -31,7 +31,7 @@ import numpy as np
 from .base import TPOTBase
 from .config.classifier import classifier_config_dict
 from .config.regressor import regressor_config_dict
-from .config.clutering import clustering_config_dict
+from .config.clustering import clustering_config_dict
 
 
 class TPOTClassifier(TPOTBase):
@@ -42,7 +42,7 @@ class TPOTClassifier(TPOTBase):
     classification = True
     regression = False
     clustering = False
-    
+
     def _init_pretest(self, features, target):
         """Set the sample of data used to verify pipelines work
         with the passed data set.
@@ -99,7 +99,7 @@ class TPOTClustering(TPOTBase):
     classification = False
     regression = False
     clustering = True
-    
+
     def _init_pretest(self, features, target):
         #checar se existe target para dividir o dataset ou usar tudo como train
         print("preset clustering")
