@@ -34,7 +34,6 @@ clustering_config_dict = {
         'damping': np.arange(0.5, 1.01, 0.05),
         'max_iter': np.arange(100, 600, 100),
         'convergence_iter': np.arange(5, 35, 5),
-        'affinity': ['euclidean', 'precomputed'],
     },
 
     'sklearn.cluster.AgglomerativeClustering': {
