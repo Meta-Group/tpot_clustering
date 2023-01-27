@@ -37,7 +37,7 @@ clustering_config_dict = {
     },
 
     'sklearn.cluster.AgglomerativeClustering': {
-        'n_clusters': range(1, 21),
+        'n_clusters': range(2, 21),
         'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
         'linkage': ['ward', 'complete', 'average', 'single'],
     },
@@ -45,7 +45,7 @@ clustering_config_dict = {
     'sklearn.cluster.Birch': {
         'threshold': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
         'branching_factor': [1, 5, 10, 25, 50, 100],
-        'n_clusters': range(1, 21),
+        'n_clusters': range(2, 21),
     },
 
     'sklearn.cluster.DBSCAN': {
@@ -56,20 +56,20 @@ clustering_config_dict = {
     },
 
     'sklearn.cluster.FeatureAgglomeration': {
-        'n_clusters': range(1, 21),
+        'n_clusters': range(2, 21),
         'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
         'linkage': ['ward', 'complete', 'average', 'single'],
     },
 
     'sklearn.cluster.KMeans': {
-        'n_clusters': range(1, 21),
+        'n_clusters': range(2, 21),
         'init': ['k-means++', 'random'],
         'algorithm': ['lloyd', 'elkan'],
         'max_iter': np.arange(100, 600, 100),
     },
 
     'sklearn.cluster.BisectingKMeans': {
-        'n_clusters': range(1, 21),
+        'n_clusters': range(2, 21),
         'init': ['k-means++', 'random'],
         'algorithm': ['lloyd', 'elkan'],
         'max_iter': np.arange(100, 600, 100),
@@ -77,7 +77,7 @@ clustering_config_dict = {
     },
 
     'sklearn.cluster.MiniBatchKMeans': {
-        'n_clusters': range(1, 21),
+        'n_clusters': range(2, 21),
         'init': ['k-means++', 'random'],
         'max_iter': np.arange(100, 600, 100),
     },
@@ -96,20 +96,20 @@ clustering_config_dict = {
     },
 
     'sklearn.cluster.SpectralClustering': {
-        'n_clusters': range(1, 21),
+        'n_clusters': range(2, 21),
         'eigen_solver': ['arpack', 'lobpcg', 'amg'],
         'affinity': ['nearest_neighbors', 'rbf', 'precomputed', 'precomputed_nearest_neighbors'],
     },
 
     'sklearn.cluster.SpectralBiclustering': {
-        'n_clusters': range(1, 21),
+        'n_clusters': range(2, 21),
         'method': ['bistochastic', 'scale', 'log'],
         'svd_method': ['randomized', 'arpack'],
         'init': ['k-means++', 'random'],
     },
 
     'sklearn.cluster.SpectralCoclustering': {
-        'n_clusters': range(1, 21),
+        'n_clusters': range(2, 21),
         'svd_method': ['randomized', 'arpack'],
         'init': ['k-means++', 'random'],
     },
@@ -125,7 +125,6 @@ clustering_config_dict = {
 
     'sklearn.cluster.FeatureAgglomeration': {
         'linkage': ['ward', 'complete', 'average'],
-        'affinity': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine']
     },
 
     'sklearn.preprocessing.MaxAbsScaler': {
@@ -145,7 +144,6 @@ clustering_config_dict = {
     },
 
     'sklearn.decomposition.PCA': {
-        'svd_solver': ['randomized'],
         'iterated_power': range(1, 11)
     },
 
