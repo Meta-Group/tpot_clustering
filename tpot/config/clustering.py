@@ -31,7 +31,7 @@ clustering_config_dict = {
 
     # Clusterers
     'sklearn.cluster.AffinityPropagation': {
-        'damping': np.arange(0.5, 1.01, 0.05),
+        'damping': np.arange(0.5, 1.0, 0.05),
         'max_iter': np.arange(100, 600, 100),
         'convergence_iter': np.arange(5, 35, 5),
     },
