@@ -55,12 +55,6 @@ clustering_config_dict = {
         'leaf_size': [1,  5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
     },
 
-    'sklearn.cluster.FeatureAgglomeration': {
-        'n_clusters': range(2, 21),
-        'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
-        'linkage': ['ward', 'complete', 'average', 'single'],
-    },
-
     'sklearn.cluster.KMeans': {
         'n_clusters': range(2, 21),
         'init': ['k-means++', 'random'],
@@ -99,19 +93,6 @@ clustering_config_dict = {
         'n_clusters': range(2, 21),
         'eigen_solver': ['arpack', 'lobpcg', 'amg'],
         'affinity': ['nearest_neighbors', 'rbf', 'precomputed', 'precomputed_nearest_neighbors'],
-    },
-
-    'sklearn.cluster.SpectralBiclustering': {
-        'n_clusters': range(2, 21),
-        'method': ['bistochastic', 'scale', 'log'],
-        'svd_method': ['randomized', 'arpack'],
-        'init': ['k-means++', 'random'],
-    },
-
-    'sklearn.cluster.SpectralCoclustering': {
-        'n_clusters': range(2, 21),
-        'svd_method': ['randomized', 'arpack'],
-        'init': ['k-means++', 'random'],
     },
 
     # Preprocessors
