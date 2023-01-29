@@ -35,6 +35,8 @@ from sklearn.base import clone
 from collections import defaultdict
 import warnings
 from stopit import threading_timeoutable, TimeoutException
+from sklearn import metrics
+from sklearn.pipeline import make_pipeline
 
 
 def pick_two_individuals_eligible_for_crossover(population):
@@ -479,3 +481,49 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             return "Timeout"
         except Exception as e:
             return -float('inf')
+
+@threading_timeoutable(default="Timeout")
+def _wrapped_multi_object_validation(sklearn_pipeline, features, scoring_function, 
+                                    sample_weight=None,groups=None, use_dask=False):
+    """Fit estimator and compute scores for a given dataset split.
+
+    Parameters
+    ----------
+    sklearn_pipeline : pipeline object implementing 'fit'
+        The object to use to fit the data.
+    features : array-like of shape at least 2D
+        The data to fit.
+    scoring_function : callable
+        A scorer callable object / function with signature
+        ``scorer(estimator, X, y)``.
+    sample_weight : array-like, optional
+        List of sample weights to balance (or un-balanace) the dataset target as needed
+    groups: array-like {n_samples, }, optional
+        Group labels for the samples used while splitting the dataset into train/test set
+    use_dask : bool, default False
+        Whether to use dask
+    """
+    # print("\nMulti OBJ: ")
+    sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
+    features = indexable(features)
+    data = features[0]
+    # To treinando errado aqui, as labels estão binárias
+    try:
+        estimator = sklearn_pipeline.fit(features[0])
+        labels = estimator[-1].labels_
+        # print(f"Pipeline: {sklearn_pipeline}")
+        # print(f"Labels: {labels}")
+        silhouette = metrics.silhouette_score(
+                        data,
+                        labels,
+                        metric="euclidean"
+                        )
+        return silhouette
+    except TimeoutException:
+        return "Timeout"                   
+    except Exception as e:
+        print(e)
+        return -float('inf')
+
+
+    

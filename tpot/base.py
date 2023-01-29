@@ -86,6 +86,7 @@ from .gp_deap import (
     eaMuPlusLambda,
     mutNodeReplacement,
     _wrapped_cross_val_score,
+    _wrapped_multi_object_validation,
     cxOnePoint,
 )
 
@@ -176,11 +177,13 @@ class TPOTBase(BaseEstimator):
 
             ['neg_median_absolute_error', 'neg_mean_absolute_error',
             'neg_mean_squared_error', 'r2']
+        
         cv: int or cross-validation generator, optional (default: 5)
             If CV is a number, then it is the number of folds to evaluate each
             pipeline over in k-fold cross-validation during the TPOT optimization
              process. If it is an object then it is an object to be used as a
              cross-validation generator.
+
         subsample: float, optional (default: 1.0)
             Subsample ratio of the training instance. Setting it to 0.5 means that TPOT
             randomly collects half of training samples for pipeline optimization process.
@@ -685,7 +688,7 @@ class TPOTBase(BaseEstimator):
         """
         raise ValueError("Use TPOTClassifier or TPOTRegressor pr TPOTClusterer")
 
-    def fit(self, features, target, sample_weight=None, groups=None):
+    def fit(self, features, target=None, sample_weight=None, groups=None):
         """Fit an optimized machine learning pipeline.
 
         Uses genetic programming to optimize a machine learning pipeline that
@@ -724,26 +727,26 @@ class TPOTBase(BaseEstimator):
 
         """
         self._fit_init()
-        features, target = self._check_dataset(features, target, sample_weight)
+        # features, target = self._check_dataset(features, target, sample_weight)
         self._init_pretest(features, target)
 
-        # Randomly collect a subsample of training samples for pipeline optimization process.
-        if self.subsample < 1.0:
-            features, _, target, _ = train_test_split(
-                features,
-                target,
-                train_size=self.subsample,
-                test_size=None,
-                random_state=self.random_state,
-            )
-            # Raise a warning message if the training size is less than 1500 when subsample is not default value
-            if features.shape[0] < 1500:
-                print(
-                    "Warning: Although subsample can accelerate pipeline optimization process, "
-                    "too small training sample size may cause unpredictable effect on maximizing "
-                    "score in pipeline optimization process. Increasing subsample ratio may get "
-                    "a more reasonable outcome from optimization process in TPOT."
-                )
+        # # Randomly collect a subsample of training samples for pipeline optimization process.
+        # if self.subsample < 1.0:
+        #     features, _, target, _ = train_test_split(
+        #         features,
+        #         target,
+        #         train_size=self.subsample,
+        #         test_size=None,
+        #         random_state=self.random_state,
+        #     )
+        #     # Raise a warning message if the training size is less than 1500 when subsample is not default value
+        #     if features.shape[0] < 1500:
+        #         print(
+        #             "Warning: Although subsample can accelerate pipeline optimization process, "
+        #             "too small training sample size may cause unpredictable effect on maximizing "
+        #             "score in pipeline optimization process. Increasing subsample ratio may get "
+        #             "a more reasonable outcome from optimization process in TPOT."
+        #         )
 
         # Set the seed for the GP run
         if self.random_state is not None:
@@ -921,15 +924,15 @@ class TPOTBase(BaseEstimator):
                         sklearn_pipeline = self._toolbox.compile(expr=pipeline)
                         from sklearn.model_selection import cross_val_score
 
-                        cv_scores = cross_val_score(
-                            sklearn_pipeline,
-                            self.pretest_X,
-                            self.pretest_y,
-                            cv=self.cv,
-                            scoring=self.scoring_function,
-                            verbose=0,
-                            error_score="raise",
-                        )
+                        # cv_scores = cross_val_score(
+                        #     sklearn_pipeline,
+                        #     self.pretest_X,
+                        #     self.pretest_y,
+                        #     cv=self.cv,
+                        #     scoring=self.scoring_function,
+                        #     verbose=0,
+                        #     error_score="raise",
+                        # )
                         break
                 raise RuntimeError(
                     "There was an error in the TPOT optimization "
@@ -1094,6 +1097,7 @@ class TPOTBase(BaseEstimator):
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface
         if isinstance(self.scoring_function, str):
+            print(f"Scorer: {self.scoring_function}")
             scorer = SCORERS[self.scoring_function]
         elif callable(self.scoring_function):
             scorer = self.scoring_function
@@ -1471,7 +1475,7 @@ class TPOTBase(BaseEstimator):
         return stats
 
     def _evaluate_individuals(
-        self, population, features, target, sample_weight=None, groups=None
+        self, population, features, target=None, sample_weight=None, groups=None
     ):
         """Determine the fit of the provided individuals.
 
@@ -1499,6 +1503,7 @@ class TPOTBase(BaseEstimator):
         # Evaluate the individuals with an invalid fitness
         individuals = [ind for ind in population if not ind.fitness.valid]
         num_population = len(population)
+        
         # update pbar for valid individuals (with fitness values)
         if self.verbosity > 0:
             self._pbar.update(num_population - len(individuals))
@@ -1509,21 +1514,31 @@ class TPOTBase(BaseEstimator):
             sklearn_pipeline_list,
             stats_dicts,
         ) = self._preprocess_individuals(individuals)
-
-        cv = check_cv(self.cv, target, classifier=self.classification)
-
+        # Supervised
+        # cv = check_cv(self.cv, target, classifier=self.classification)
         # Make the partial function that will be called below
+        # partial_wrapped_cross_val_score = partial(
+        #     _wrapped_cross_val_score,
+        #     features=features,
+        #     target=target,
+        #     cv=cv,
+        #     scoring_function=self.scoring_function,
+        #     sample_weight=sample_weight,
+        #     groups=groups,
+        #     timeout=max(int(self.max_eval_time_mins * 60), 1),
+        #     use_dask=self.use_dask,
+        # )
+
+        # Unsupervised
         partial_wrapped_cross_val_score = partial(
-            _wrapped_cross_val_score,
-            features=features,
-            target=target,
-            cv=cv,
-            scoring_function=self.scoring_function,
-            sample_weight=sample_weight,
-            groups=groups,
-            timeout=max(int(self.max_eval_time_mins * 60), 1),
-            use_dask=self.use_dask,
-        )
+                _wrapped_multi_object_validation,
+                features=features,
+                scoring_function=self.scoring_function,
+                sample_weight=sample_weight,
+                groups=groups,
+                timeout=max(int(self.max_eval_time_mins * 60), 1),
+                use_dask=self.use_dask,
+        )  
 
         result_score_list = []
 
