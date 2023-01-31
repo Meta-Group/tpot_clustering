@@ -503,22 +503,26 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scoring_functio
     use_dask : bool, default False
         Whether to use dask
     """
-    # print("Multi OBJ:")
-    sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
-    
     try:
-        # print(f"Scoring: {scoring_function}")
-        # print(f"\n=========================\n Pipeline: {sklearn_pipeline}")
-        
+        # TODO - avaliar base transformada pelo pipeline
+        # - deixar funçao dinamica para scoring
+        sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
         estimator = sklearn_pipeline.fit(features)
-        print(f"Estimator:{estimator[-1]} ---> {len(estimator[-1].labels_)}")
         labels = estimator[-1].labels_
-    #     print(f"Labels: {labels}")
+        temp_features = features
+
+        if sklearn_pipeline[0] is not None:
+            temp_features = sklearn_pipeline[0].fit_transform(temp_features)
+        if sklearn_pipeline[1] is not None:
+            temp_features = sklearn_pipeline[1].fit_transform(temp_features)
+            
+
         score = metrics.silhouette_score(
-                        features,
+                        temp_features,
                         labels,
                         metric="euclidean"
                         )
+        print(f"\n=========================\nScore:{score} Pipeline: {sklearn_pipeline}")
         return score
     except TimeoutException:
         return "Timeout"                   

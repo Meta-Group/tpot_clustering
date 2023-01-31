@@ -561,7 +561,7 @@ class TPOTBase(BaseEstimator):
             "population", tools.initRepeat, list, self._toolbox.individual
         )
         self._toolbox.register("compile", self._compile_to_sklearn)
-        self._toolbox.register("select", tools.selNSGA2)
+        self._toolbox.register("select", tools.selTournament, tournsize=5, fit_attr="fitness")
         self._toolbox.register("mate", self._mate_operator)
         if self.tree_structure:
             self._toolbox.register(
@@ -921,6 +921,7 @@ class TPOTBase(BaseEstimator):
                     self._pareto_front.items, reversed(self._pareto_front.keys)
                 ):
                     if np.isinf(pipeline_scores.wvalues[1]):
+                        print("!!!!!!!!!!!! isinf !!!!!!!!!!!!")
                         sklearn_pipeline = self._toolbox.compile(expr=pipeline)
                         from sklearn.model_selection import cross_val_score
 
@@ -1563,6 +1564,11 @@ class TPOTBase(BaseEstimator):
                     chunk_size = min(cpu_count() * 2, self._n_jobs * 4)
                 for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
                     self._stop_by_max_time_mins()
+                    # lista de métricas
+                    # clustering_metrics_list = ['silhouete', '...']
+                    # for 
+                        # partial_wrapped_cross_val_score() 
+                    
                     if self.use_dask:
                         import dask
 
@@ -1593,6 +1599,8 @@ class TPOTBase(BaseEstimator):
                                 chunk_idx : chunk_idx + chunk_size
                             ]
                         )
+
+
                     # update pbar
                     for val in tmp_result_scores:
                         result_score_list = self._update_val(val, result_score_list)
