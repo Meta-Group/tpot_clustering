@@ -50,9 +50,9 @@ clustering_config_dict = {
 
     'sklearn.cluster.DBSCAN': {
         'eps': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'min_samples': [1, 3, 5, 10, 25, 50],
+        'min_samples': [3, 5, 10, 25, 50],
         'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
-        'leaf_size': [1,  5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+        'leaf_size': [5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
     },
 
     'sklearn.cluster.KMeans': {
@@ -60,6 +60,7 @@ clustering_config_dict = {
         'init': ['k-means++', 'random'],
         'algorithm': ['lloyd', 'elkan'],
         'max_iter': np.arange(100, 600, 100),
+        'n_init':['auto']
     },
 
     'sklearn.cluster.BisectingKMeans': {
@@ -78,7 +79,7 @@ clustering_config_dict = {
 
     'sklearn.cluster.MeanShift': {
         'max_iter': np.arange(100, 600, 100),
-        'min_bin_freq': [1, 3, 5, 10],
+        'min_bin_freq': [3, 5, 10],
         'cluster_all': [True, False],
     },
 
@@ -104,9 +105,9 @@ clustering_config_dict = {
         'tol': np.arange(0.0, 1.01, 0.05)
     },
 
-    'sklearn.cluster.FeatureAgglomeration': {
-        'linkage': ['ward', 'complete', 'average'],
-    },
+    # 'sklearn.cluster.FeatureAgglomeration': {
+    #     'linkage': ['ward', 'complete', 'average'],
+    # },
 
     'sklearn.preprocessing.MaxAbsScaler': {
     },
