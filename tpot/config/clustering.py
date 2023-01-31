@@ -101,10 +101,6 @@ clustering_config_dict = {
         'threshold': np.arange(0.0, 1.01, 0.05)
     },
 
-    'sklearn.decomposition.FastICA': {
-        'tol': np.arange(0.0, 1.01, 0.05)
-    },
-
     # 'sklearn.cluster.FeatureAgglomeration': {
     #     'linkage': ['ward', 'complete', 'average'],
     # },
@@ -123,10 +119,6 @@ clustering_config_dict = {
         'kernel': ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid'],
         'gamma': np.arange(0.0, 1.01, 0.05),
         'n_components': range(1, 11)
-    },
-
-    'sklearn.decomposition.PCA': {
-        'iterated_power': range(1, 11)
     },
 
     'sklearn.preprocessing.PolynomialFeatures': {
@@ -172,6 +164,14 @@ clustering_config_dict = {
 
     'sklearn.feature_selection.VarianceThreshold': {
         'threshold': [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2]
+    },
+
+    'sklearn.decomposition.PCA': {
+        'n_components': [2, 3, 5, 10]
+    },
+
+    'sklearn.decomposition.FastICA': {
+        'n_components': [2, 3, 5, 10]
     },
 
     'sklearn.feature_selection.RFE': {
