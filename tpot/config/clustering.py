@@ -97,9 +97,9 @@ clustering_config_dict = {
     },
 
     # Preprocessors
-    'sklearn.preprocessing.Binarizer': {
-        'threshold': np.arange(0.0, 1.01, 0.05)
-    },
+    #'sklearn.preprocessing.Binarizer': {
+     #   'threshold': np.arange(0.0, 1.01, 0.05)
+    #},
 
     # 'sklearn.cluster.FeatureAgglomeration': {
     #     'linkage': ['ward', 'complete', 'average'],
