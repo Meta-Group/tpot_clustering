@@ -511,11 +511,11 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scoring_functio
         labels = estimator[-1].labels_
         temp_features = features
 
-        if sklearn_pipeline[0] is not None:
-            temp_features = sklearn_pipeline[0].fit_transform(temp_features)
-        if sklearn_pipeline[1] is not None:
-            temp_features = sklearn_pipeline[1].fit_transform(temp_features)
-            
+        for operator in sklearn_pipeline:
+            if getattr(operator, "_estimator_type", None) != "clusterer":
+                temp_features = operator.fit_transform(temp_features)
+                print(f"{operator} Transformed:{temp_features[0]}")
+
 
         score = metrics.silhouette_score(
                         temp_features,
@@ -523,6 +523,7 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scoring_functio
                         metric="euclidean"
                         )
         print(f"\n=========================\nScore:{score} Pipeline: {sklearn_pipeline}")
+        
         return score
     except TimeoutException:
         return "Timeout"                   
