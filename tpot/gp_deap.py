@@ -504,8 +504,9 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scoring_functio
         Whether to use dask
     """
     try:
-        # TODO - avaliar base transformada pelo pipeline
-        # - deixar funçao dinamica para scoring
+        # TODO
+        # essa função deve retornar somente o multi scoring para nao prejudicar a arquitetura do tpot
+        # sendo assim, devera receber as 6 listas correspondentes a cada métricas calculada por individuo
         sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
         estimator = sklearn_pipeline.fit(features)
         labels = estimator[-1].labels_
@@ -517,14 +518,44 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scoring_functio
                 print(f"{operator} Transformed:{temp_features[0]}")
 
 
-        score = metrics.silhouette_score(
+        sils = metrics.silhouette_score(
                         temp_features,
                         labels,
                         metric="euclidean"
                         )
-        print(f"\n=========================\nScore:{score} Pipeline: {sklearn_pipeline}")
         
-        return score
+        # nmis = metrics.silhouette_score(
+        #                 temp_features,
+        #                 labels,
+        #                 metric="euclidean"
+        #                 )
+
+        # homos = metrics.silhouette_score(
+        #                 temp_features,
+        #                 labels,
+        #                 metric="euclidean"
+        #                 )
+
+        # comps = metrics.silhouette_score(
+        #                 temp_features,
+        #                 labels,
+        #                 metric="euclidean"
+        #                 )
+
+        # dbs = metrics.silhouette_score(
+        #                 temp_features,
+        #                 labels,
+        #                 metric="euclidean"
+        #                 )
+
+        # chs = metrics.silhouette_score(
+        #                 temp_features,
+        #                 labels,
+        #                 metric="euclidean"
+        #                 )
+        # print(f"\n=========================\nScore:{score} Pipeline: {sklearn_pipeline}")
+        
+        return sils
     except TimeoutException:
         return "Timeout"                   
     except Exception as e:
