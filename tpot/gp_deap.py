@@ -515,8 +515,6 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scoring_functio
         for operator in sklearn_pipeline:
             if getattr(operator, "_estimator_type", None) != "clusterer":
                 temp_features = operator.fit_transform(temp_features)
-                print(f"{operator} Transformed:{temp_features[0]}")
-
 
         sils = metrics.silhouette_score(
                         temp_features,
