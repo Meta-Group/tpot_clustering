@@ -504,9 +504,6 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scoring_functio
         Whether to use dask
     """
     try:
-        # TODO
-        # essa função deve retornar somente o multi scoring para nao prejudicar a arquitetura do tpot
-        # sendo assim, devera receber as 6 listas correspondentes a cada métricas calculada por individuo
         sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
         estimator = sklearn_pipeline.fit(features)
         labels = estimator[-1].labels_
@@ -516,49 +513,50 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scoring_functio
             if getattr(operator, "_estimator_type", None) != "clusterer":
                 temp_features = operator.fit_transform(temp_features)
 
-        sils = metrics.silhouette_score(
-                        temp_features,
-                        labels,
-                        metric="euclidean"
-                        )
         
-        # nmis = metrics.silhouette_score(
-        #                 temp_features,
-        #                 labels,
-        #                 metric="euclidean"
-        #                 )
-
-        # homos = metrics.silhouette_score(
-        #                 temp_features,
-        #                 labels,
-        #                 metric="euclidean"
-        #                 )
-
-        # comps = metrics.silhouette_score(
-        #                 temp_features,
-        #                 labels,
-        #                 metric="euclidean"
-        #                 )
-
-        # dbs = metrics.silhouette_score(
-        #                 temp_features,
-        #                 labels,
-        #                 metric="euclidean"
-        #                 )
-
-        # chs = metrics.silhouette_score(
-        #                 temp_features,
-        #                 labels,
-        #                 metric="euclidean"
-        #                 )
         # print(f"\n=========================\nScore:{score} Pipeline: {sklearn_pipeline}")
-        
-        return sils
+        if score_individual_(temp_features, labels):
+            return score_individual_(temp_features, labels)
+        # return [0.1,0.2,0.3]
     except TimeoutException:
         return "Timeout"                   
     except Exception as e:
         print(e)
-        return -float('inf')
+        # return -float('inf')
+        return [0,0,0]
 
+def score_individual_(temp_features,labels):
+    try:
+        sils = metrics.silhouette_score(
+                            temp_features,
+                            labels,
+                            )
+            
+        # nmis = metrics.normalized_mutual_info_score(
+        #                 temp_features,
+        #                 labels,
+        #                 )
 
-    
+        # homos = metrics.homogeneity_score(
+        #                 temp_features,
+        #                 labels,
+        #                 )
+
+        # comps = metrics.completeness_score(
+        #                 temp_features,
+        #                 labels,
+        #                 )
+
+        dbs = metrics.davies_bouldin_score(
+                        temp_features,
+                        labels,
+                        )
+
+        chs = metrics.calinski_harabasz_score(
+                        temp_features,
+                        labels,
+                        )
+        return [sils, dbs, chs]
+    except Exception as e:
+        print(f"ERRO:{e}")
+        return [0,0,0]   
