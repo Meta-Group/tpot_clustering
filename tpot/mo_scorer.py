@@ -26,7 +26,7 @@ class Scorer:
         self._chs = np.array(chs) if chs is not None else None
         self._population = self.preprocess_metrics()
         self._const_non_zero = 0.000001
-        print(self._population)
+        # print(self._population)
 
     def preprocess_metrics(self):
         """
