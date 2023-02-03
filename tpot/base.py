@@ -89,7 +89,7 @@ from .gp_deap import (
     _wrapped_multi_object_validation,
     cxOnePoint,
 )
-
+from .mo_scorer import Scorer
 try:
     from imblearn.pipeline import make_pipeline as make_imblearn_pipeline
 except:
@@ -1553,58 +1553,65 @@ class TPOTBase(BaseEstimator):
                     val = partial_wrapped_cross_val_score(
                         sklearn_pipeline=sklearn_pipeline
                     )
+                    # lista de listas
                     result_score_list = self._update_val(val, result_score_list)
-            else:
-                # chunk size for pbar update
-                if self.use_dask:
-                    # chunk size is min of _lambda and n_jobs * 10
-                    chunk_size = min(self._lambda, self._n_jobs * 10)
-                else:
-                    # chunk size is min of cpu_count * 2 and n_jobs * 4
-                    chunk_size = min(cpu_count() * 2, self._n_jobs * 4)
-                for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
-                    self._stop_by_max_time_mins()
-                    # lista de métricas
-                    # clustering_metrics_list = ['silhouete', '...']
-                    # for 
-                        # partial_wrapped_cross_val_score() 
+                # print(f"\nResult Score List{result_score_list}")
+                transposed_scores = np.array(result_score_list).T.tolist()
+                # print(f"\nTransposed Score List{transposed_scores}")
+                mo_score_list = Scorer(sils=transposed_scores[0], dbs=transposed_scores[1], chs=transposed_scores[2])
+                result_score_list = mo_score_list.mean_score().tolist()
+                # print(f"\nMo Mean: {result_score_list}")
+            # else:
+                # # chunk size for pbar update
+                # if self.use_dask:
+                #     # chunk size is min of _lambda and n_jobs * 10
+                #     chunk_size = min(self._lambda, self._n_jobs * 10)
+                # else:
+                #     # chunk size is min of cpu_count * 2 and n_jobs * 4
+                #     chunk_size = min(cpu_count() * 2, self._n_jobs * 4)
+                # for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
+                #     self._stop_by_max_time_mins()
+                #     # lista de métricas
+                #     # clustering_metrics_list = ['silhouete', '...']
+                #     # for 
+                #         # partial_wrapped_cross_val_score() 
                     
-                    if self.use_dask:
-                        import dask
+                #     if self.use_dask:
+                #         import dask
 
-                        tmp_result_scores = [
-                            partial_wrapped_cross_val_score(
-                                sklearn_pipeline=sklearn_pipeline
-                            )
-                            for sklearn_pipeline in sklearn_pipeline_list[
-                                chunk_idx : chunk_idx + chunk_size
-                            ]
-                        ]
+                #         tmp_result_scores = [
+                #             partial_wrapped_cross_val_score(
+                #                 sklearn_pipeline=sklearn_pipeline
+                #             )
+                #             for sklearn_pipeline in sklearn_pipeline_list[
+                #                 chunk_idx : chunk_idx + chunk_size
+                #             ]
+                #         ]
 
                         
-                        with warnings.catch_warnings():
-                            warnings.simplefilter("ignore")
-                            tmp_result_scores = list(dask.compute(*tmp_result_scores, num_workers=self.n_jobs))
+                #         with warnings.catch_warnings():
+                #             warnings.simplefilter("ignore")
+                #             tmp_result_scores = list(dask.compute(*tmp_result_scores, num_workers=self.n_jobs))
 
-                    else:
+                #     else:
 
-                        parallel = Parallel(
-                            n_jobs=self._n_jobs, verbose=0, pre_dispatch="2*n_jobs"
-                        )
-                        tmp_result_scores = parallel(
-                            delayed(partial_wrapped_cross_val_score)(
-                                sklearn_pipeline=sklearn_pipeline
-                            )
-                            for sklearn_pipeline in sklearn_pipeline_list[
-                                chunk_idx : chunk_idx + chunk_size
-                            ]
-                        )
+                #         parallel = Parallel(
+                #             n_jobs=self._n_jobs, verbose=0, pre_dispatch="2*n_jobs"
+                #         )
+                #         tmp_result_scores = parallel(
+                #             delayed(partial_wrapped_cross_val_score)(
+                #                 sklearn_pipeline=sklearn_pipeline
+                #             )
+                #             for sklearn_pipeline in sklearn_pipeline_list[
+                #                 chunk_idx : chunk_idx + chunk_size
+                #             ]
+                #         )
 
 
                     # update pbar
-                    for val in tmp_result_scores:
-                        result_score_list = self._update_val(val, result_score_list)
-
+                    # for val in tmp_result_scores:
+                    #     result_score_list = self._update_val(val, result_score_list)
+    
         except (KeyboardInterrupt, SystemExit, StopIteration) as e:
             if self.verbosity > 0:
                 self._pbar.write("", file=self.log_file_)
@@ -1635,7 +1642,7 @@ class TPOTBase(BaseEstimator):
 
             self._pop = population
             raise KeyboardInterrupt
-
+        
         self._update_evaluated_individuals_(
             result_score_list, eval_individuals_str, operator_counts, stats_dicts
         )
@@ -1977,7 +1984,7 @@ class TPOTBase(BaseEstimator):
                 )
             )
             result_score_list.append(-float("inf"))
-        else:
+        elif val is not None:
             result_score_list.append(val)
         return result_score_list
 
