@@ -542,7 +542,7 @@ class TPOTBase(BaseEstimator):
     def _setup_toolbox(self):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            creator.create("FitnessMulti", base.Fitness, weights=(-1.0, 1.0))
+            creator.create("FitnessMulti", base.Fitness, weights=(-1.0, -1.0))
             creator.create(
                 "Individual",
                 gp.PrimitiveTree,
@@ -561,7 +561,7 @@ class TPOTBase(BaseEstimator):
             "population", tools.initRepeat, list, self._toolbox.individual
         )
         self._toolbox.register("compile", self._compile_to_sklearn)
-        self._toolbox.register("select", tools.selTournament, tournsize=5, fit_attr="fitness")
+        self._toolbox.register("select", tools.selNSGA2)
         self._toolbox.register("mate", self._mate_operator)
         if self.tree_structure:
             self._toolbox.register(
@@ -688,7 +688,7 @@ class TPOTBase(BaseEstimator):
         """
         raise ValueError("Use TPOTClassifier or TPOTRegressor pr TPOTClusterer")
 
-    def fit(self, features, target=None, sample_weight=None, groups=None):
+    def fit(self, features, target=None, sample_weight=None, groups=None, mo_function=None):
         """Fit an optimized machine learning pipeline.
 
         Uses genetic programming to optimize a machine learning pipeline that
@@ -758,6 +758,7 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register(
             "evaluate",
             self._evaluate_individuals,
+            mo_function=mo_function,
             features=features,
             target=target,
             sample_weight=sample_weight,
@@ -915,26 +916,26 @@ class TPOTBase(BaseEstimator):
                     self._optimized_pipeline_score = pipeline_scores.wvalues[1]
 
             if not self._optimized_pipeline:
+                print("DEU BO")
                 # pick one individual from evaluated pipeline for a error message
-                eval_ind_list = list(self.evaluated_individuals_.keys())
-                for pipeline, pipeline_scores in zip(
-                    self._pareto_front.items, reversed(self._pareto_front.keys)
-                ):
-                    if np.isinf(pipeline_scores.wvalues[1]):
-                        print("!!!!!!!!!!!! isinf !!!!!!!!!!!!")
-                        sklearn_pipeline = self._toolbox.compile(expr=pipeline)
-                        from sklearn.model_selection import cross_val_score
+                # eval_ind_list = list(self.evaluated_individuals_.keys())
+                # for pipeline, pipeline_scores in zip(
+                #     self._pareto_front.items, reversed(self._pareto_front.keys)
+                # ):
+                #     if np.isinf(pipeline_scores.wvalues[1]):
+                #         sklearn_pipeline = self._toolbox.compile(expr=pipeline)
+                #         from sklearn.model_selection import cross_val_score
 
-                        # cv_scores = cross_val_score(
-                        #     sklearn_pipeline,
-                        #     self.pretest_X,
-                        #     self.pretest_y,
-                        #     cv=self.cv,
-                        #     scoring=self.scoring_function,
-                        #     verbose=0,
-                        #     error_score="raise",
-                        # )
-                        break
+                #         # cv_scores = cross_val_score(
+                #         #     sklearn_pipeline,
+                #         #     self.pretest_X,
+                #         #     self.pretest_y,
+                #         #     cv=self.cv,
+                #         #     scoring=self.scoring_function,
+                #         #     verbose=0,
+                #         #     error_score="raise",
+                #         # )
+                #         break
                 raise RuntimeError(
                     "There was an error in the TPOT optimization "
                     "process. This could be because the data was "
@@ -993,7 +994,6 @@ class TPOTBase(BaseEstimator):
             )
         else:
             self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
-
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 self.fitted_pipeline_.fit(features, target)
@@ -1006,7 +1006,7 @@ class TPOTBase(BaseEstimator):
                 optimized_pipeline_str = self.clean_pipeline_string(
                     self._optimized_pipeline
                 )
-                print("Best pipeline:", optimized_pipeline_str)
+                print("Best Overall Pipeline:", optimized_pipeline_str)
 
             # Store and fit the entire Pareto front as fitted models for convenience
             self.pareto_front_fitted_pipelines_ = {}
@@ -1098,7 +1098,6 @@ class TPOTBase(BaseEstimator):
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface
         if isinstance(self.scoring_function, str):
-            print(f"Scorer: {self.scoring_function}")
             scorer = SCORERS[self.scoring_function]
         elif callable(self.scoring_function):
             scorer = self.scoring_function
@@ -1307,6 +1306,8 @@ class TPOTBase(BaseEstimator):
                 output_file.write(to_write)
         else:
             return to_write
+    def get_best_score(self):
+        return self._optimized_pipeline_score
 
     def _impute_values(self, features):
         """Impute missing values in a feature set.
@@ -1476,7 +1477,7 @@ class TPOTBase(BaseEstimator):
         return stats
 
     def _evaluate_individuals(
-        self, population, features, target=None, sample_weight=None, groups=None
+        self, population, features, target=None, sample_weight=None, groups=None, mo_function=None
     ):
         """Determine the fit of the provided individuals.
 
@@ -1501,10 +1502,11 @@ class TPOTBase(BaseEstimator):
             according to its performance on the provided data
 
         """
+        
         # Evaluate the individuals with an invalid fitness
+        
         individuals = [ind for ind in population if not ind.fitness.valid]
         num_population = len(population)
-        
         # update pbar for valid individuals (with fitness values)
         if self.verbosity > 0:
             self._pbar.update(num_population - len(individuals))
@@ -1515,22 +1517,7 @@ class TPOTBase(BaseEstimator):
             sklearn_pipeline_list,
             stats_dicts,
         ) = self._preprocess_individuals(individuals)
-        # Supervised
-        # cv = check_cv(self.cv, target, classifier=self.classification)
-        # Make the partial function that will be called below
-        # partial_wrapped_cross_val_score = partial(
-        #     _wrapped_cross_val_score,
-        #     features=features,
-        #     target=target,
-        #     cv=cv,
-        #     scoring_function=self.scoring_function,
-        #     sample_weight=sample_weight,
-        #     groups=groups,
-        #     timeout=max(int(self.max_eval_time_mins * 60), 1),
-        #     use_dask=self.use_dask,
-        # )
 
-        # Unsupervised
         partial_wrapped_cross_val_score = partial(
                 _wrapped_multi_object_validation,
                 features=features,
@@ -1553,14 +1540,24 @@ class TPOTBase(BaseEstimator):
                     val = partial_wrapped_cross_val_score(
                         sklearn_pipeline=sklearn_pipeline
                     )
-                    # lista de listas
                     result_score_list = self._update_val(val, result_score_list)
-                # print(f"\nResult Score List{result_score_list}")
                 transposed_scores = np.array(result_score_list).T.tolist()
-                # print(f"\nTransposed Score List{transposed_scores}")
-                mo_score_list = Scorer(sils=transposed_scores[0], dbs=transposed_scores[1], chs=transposed_scores[2])
-                result_score_list = mo_score_list.mean_score().tolist()
-                # print(f"\nMo Mean: {result_score_list}")
+                original_values = result_score_list
+                # TODO - dinamizar listas como parametros 
+                mo_scorer = Scorer(sils=transposed_scores[0], dbs=transposed_scores[1], chs=transposed_scores[2])
+                mo_= getattr(mo_scorer, mo_function)
+                result_score_list = mo_().tolist()
+                # print("\n================================================\n")
+                # print(f"\n Mo Scores: {result_score_list}")
+                # print(f"\n>>> Scores Individuals: {len(sklearn_pipeline_list)}\n")
+                # [print(f"Individual {individual}") for individual in sklearn_pipeline_list]
+
+                # print(f"Population: {sklearn_pipeline_list}")
+                # for i in range(0,len(sklearn_pipeline_list)):
+                #     print(f"\nScorers: {original_values[i]}")
+                #     print(f"Mo Score: {result_score_list[i]}")
+                #     print(f"\n {sklearn_pipeline_list[i]}")
+
             # else:
                 # # chunk size for pbar update
                 # if self.use_dask:
@@ -1729,13 +1726,14 @@ class TPOTBase(BaseEstimator):
                     pbar_msg="Invalid pipeline encountered. Skipping its evaluation."
                 )
             # Check if the individual was evaluated before
-            elif individual_str in self.evaluated_individuals_:
-                self._update_pbar(
-                    pbar_msg=(
-                        "Pipeline encountered that has previously been evaluated during the "
-                        "optimization process. Using the score from the previous evaluation."
-                    )
-                )
+            # elif individual_str in self.evaluated_individuals_:
+            #     print("PREVIOUS")
+            #     self._update_pbar(
+            #         pbar_msg=(
+            #             "Pipeline encountered that has previously been evaluated during the "
+            #             "optimization process. Using the score from the previous evaluation."
+            #         )
+            #     )
             else:
                 try:
                     # Transform the tree expression into an sklearn pipeline
@@ -1983,7 +1981,8 @@ class TPOTBase(BaseEstimator):
                     "Continuing to the next pipeline.".format(self._pbar.n)
                 )
             )
-            result_score_list.append(-float("inf"))
+            result_score_list.append([-1,10,0])
+            # result_score_list.append(-float("inf"))
         elif val is not None:
             result_score_list.append(val)
         return result_score_list
