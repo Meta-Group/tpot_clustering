@@ -75,7 +75,10 @@ class Scorer:
             )
 
         return np.array(metrics).T
-
+    
+    def standardize(self, scores_list):
+        return 1 - MinMaxScaler().fit_transform(scores_list.reshape(-1, 1)).reshape(1, -1)
+        
     def mean_score(self):
         """
         Score based on the mean of metrics
