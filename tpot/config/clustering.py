@@ -30,23 +30,18 @@ import numpy as np
 clustering_config_dict = {
 
     # Clusterers
-    'sklearn.cluster.AffinityPropagation': {
-        'damping': np.arange(0.5, 1.0, 0.05),
-        'max_iter': np.arange(100, 600, 100),
-        'convergence_iter': np.arange(5, 35, 5),
-    },
+    
+    # 'sklearn.cluster.AgglomerativeClustering': {
+    #     'n_clusters': range(2, 21),
+    #     'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
+    #     'linkage': ['ward', 'complete', 'average', 'single'],
+    # },
 
-    'sklearn.cluster.AgglomerativeClustering': {
-        'n_clusters': range(2, 21),
-        'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
-        'linkage': ['ward', 'complete', 'average', 'single'],
-    },
-
-    'sklearn.cluster.Birch': {
-        'threshold': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'branching_factor': [1, 5, 10, 25, 50, 100],
-        'n_clusters': range(2, 21),
-    },
+    # 'sklearn.cluster.Birch': {
+    #     'threshold': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+    #     'branching_factor': [1, 5, 10, 25, 50, 100],
+    #     'n_clusters': range(2, 21),
+    # },
 
     'sklearn.cluster.DBSCAN': {
         'eps': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
@@ -83,12 +78,12 @@ clustering_config_dict = {
         'cluster_all': [True, False],
     },
 
-    'sklearn.cluster.OPTICS': {
-        'min_samples': [2, 3, 5, 10, 25, 50],
-        'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
-        'cluster_method': ['xi', 'dbscan'],
-        'leaf_size': [1,  5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
-    },
+    # 'sklearn.cluster.OPTICS': {
+    #     'min_samples': [2, 3, 5, 10, 25, 50],
+    #     'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
+    #     'cluster_method': ['xi', 'dbscan'],
+    #     'leaf_size': [1,  5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+    # },
 
     'sklearn.cluster.SpectralClustering': {
         'n_clusters': range(2, 21),
