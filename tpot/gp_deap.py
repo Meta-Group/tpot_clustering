@@ -231,43 +231,74 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     for ind in population:
         initialize_stats_dict(ind)
 
-    population[:] = toolbox.evaluate(population)
+    # print("\n>>> Populacao Inicial:\n")
+    # [print(f"Individual: {pipeline}") for pipeline in population]
+    # print("\n")
 
+    population[:] = toolbox.evaluate(population)
     record = stats.compile(population) if stats is not None else {}
     logbook.record(gen=0, nevals=len(population), **record)
 
+    # [print(f"\n>>> Current HOF GP: {hof}") for hof in halloffame]
+    # print("\n======================================================================================================================\n")
     # Begin the generational process
     for gen in range(1, ngen + 1):
+        # print(f"\n>>> Gen: {gen} Population:\n")
+        # [print(f"Individual: {pipeline}") for pipeline in population]
+        
         # Vary the population
         offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
+        # [print(f"\n>>> Previous HOF:\n {hof}") for hof in halloffame]
+        [offspring.append(hof) for hof in halloffame if hof not in offspring]
 
+        # print("\n\n>>> Offspring Variacao Populacional:\n")
+        # [print(f"Individual: {pipeline}") for pipeline in offspring]
 
         # Update generation statistic for all individuals which have invalid 'generation' stats
         # This hold for individuals that have been altered in the varOr function
+        
         for ind in offspring:
             if ind.statistics['generation'] == 'INVALID':
                 ind.statistics['generation'] = gen
+        try:
+            for ind in offspring:
+                del ind.fitness.values
+        except Exception as e:
+            print(f"Erro {e}")
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-
+        
+        # print("\n>>> INVALID LIST:\n")
+        # [print(f"INVALID: {invalid}") for invalid in invalid_ind]
+        
         offspring = toolbox.evaluate(offspring)
-
+        # print("\n>>> Offspring Evaluated:\n")
+        # [print(f"Individual: {pipeline}") for pipeline in offspring]
+        
         # Select the next generation population
         population[:] = toolbox.select(population + offspring, mu)
+        
+        
+        # print("\n>>> Mixed Population\n")
+        # [print(f"Individual: {pipeline}") for pipeline in population]
+        
+        # [print(f"\n>>> Current HOF GP: \n{hof}") for hof in halloffame]
+        
+        # print("\n======================================================================================================================\n")
 
-        # pbar process
+
         if not pbar.disable:
             # Print only the best individual fitness
             if verbose == 2:
+                
                 high_score = max(halloffame.keys[x].wvalues[1] \
                     for x in range(len(halloffame.keys)))
                 pbar.write('\nGeneration {0} - Current '
-                            'best internal CV score: {1}'.format(gen,
+                            'best internal MO score: {1}'.format(gen,
                                                         high_score),
 
                             file=log_file)
-
             # Print the entire Pareto front
             elif verbose == 3:
                 pbar.write('\nGeneration {} - '
@@ -513,25 +544,16 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scoring_functio
             if getattr(operator, "_estimator_type", None) != "clusterer":
                 temp_features = operator.fit_transform(temp_features)
 
-        
-        # print(f"\n=========================\nScore:{score} Pipeline: {sklearn_pipeline}")
         if score_individual_(temp_features, labels):
             return score_individual_(temp_features, labels)
-        # return [0.1,0.2,0.3]
     except TimeoutException:
         return "Timeout"                   
     except Exception as e:
-        print(e)
-        # return -float('inf')
         return [0,0,0]
 
 def score_individual_(temp_features,labels):
     try:
-        sils = metrics.silhouette_score(
-                            temp_features,
-                            labels,
-                            )
-            
+        # TODO - Checar se tem target para ativar métricar supervisionadas  
         # nmis = metrics.normalized_mutual_info_score(
         #                 temp_features,
         #                 labels,
@@ -546,7 +568,10 @@ def score_individual_(temp_features,labels):
         #                 temp_features,
         #                 labels,
         #                 )
-
+        sils = metrics.silhouette_score(
+                            temp_features,
+                            labels,
+                            )
         dbs = metrics.davies_bouldin_score(
                         temp_features,
                         labels,
@@ -556,7 +581,10 @@ def score_individual_(temp_features,labels):
                         temp_features,
                         labels,
                         )
+        
+        # bic = log(n)*k-2log(L)
+
         return [sils, dbs, chs]
     except Exception as e:
-        print(f"ERRO:{e}")
-        return [0,0,0]   
+        return [0,0,0]
+
