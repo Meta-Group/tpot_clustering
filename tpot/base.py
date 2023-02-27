@@ -1444,6 +1444,18 @@ class TPOTBase(BaseEstimator):
                         total_mins_elapsed
                     )
                 )
+            
+    def _update(self, population):
+        self._pareto_front.clear()
+        best_pipeline = ''    
+        
+        for ind in population:
+            if best_pipeline:
+                if ind.fitness.dominates(best_pipeline.fitness):
+                    best_pipeline = ind
+            else:
+                best_pipeline = ind    
+        self._pareto_front.insert(best_pipeline)
 
     def _combine_individual_stats(self, operator_count, cv_score, individual_stats):
         """Combine the stats with operator count and cv score and preprare to be written to _evaluated_individuals
@@ -1518,7 +1530,7 @@ class TPOTBase(BaseEstimator):
             stats_dicts,
         ) = self._preprocess_individuals(individuals)
 
-        partial_wrapped_cross_val_score = partial(
+        partial_scores = partial(
                 _wrapped_multi_object_validation,
                 features=features,
                 scoring_function=self.scoring_function,
@@ -1537,77 +1549,76 @@ class TPOTBase(BaseEstimator):
             if self._n_jobs == 1 and not self.use_dask:
                 for sklearn_pipeline in sklearn_pipeline_list:
                     self._stop_by_max_time_mins()
-                    val = partial_wrapped_cross_val_score(
+                    val = partial_scores(
                         sklearn_pipeline=sklearn_pipeline
                     )
                     result_score_list = self._update_val(val, result_score_list)
                 transposed_scores = np.array(result_score_list).T.tolist()
-                original_values = result_score_list
+                
                 # TODO - dinamizar listas como parametros 
                 mo_scorer = Scorer(sils=transposed_scores[0], dbs=transposed_scores[1], chs=transposed_scores[2])
                 mo_= getattr(mo_scorer, mo_function)
+                # original_values = result_score_list
                 result_score_list = mo_().tolist()
                 # print("\n================================================\n")
                 # print(f"\n Mo Scores: {result_score_list}")
                 # print(f"\n>>> Scores Individuals: {len(sklearn_pipeline_list)}\n")
                 # [print(f"Individual {individual}") for individual in sklearn_pipeline_list]
 
-                # print(f"Population: {sklearn_pipeline_list}")
                 # for i in range(0,len(sklearn_pipeline_list)):
                 #     print(f"\nScorers: {original_values[i]}")
                 #     print(f"Mo Score: {result_score_list[i]}")
                 #     print(f"\n {sklearn_pipeline_list[i]}")
 
-            # else:
-                # # chunk size for pbar update
-                # if self.use_dask:
-                #     # chunk size is min of _lambda and n_jobs * 10
-                #     chunk_size = min(self._lambda, self._n_jobs * 10)
-                # else:
-                #     # chunk size is min of cpu_count * 2 and n_jobs * 4
-                #     chunk_size = min(cpu_count() * 2, self._n_jobs * 4)
-                # for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
-                #     self._stop_by_max_time_mins()
-                #     # lista de métricas
-                #     # clustering_metrics_list = ['silhouete', '...']
-                #     # for 
-                #         # partial_wrapped_cross_val_score() 
+            else:
+                # chunk size for pbar update
+                if self.use_dask:
+                    # chunk size is min of _lambda and n_jobs * 10
+                    chunk_size = min(self._lambda, self._n_jobs * 10)
+                else:
+                    # chunk size is min of cpu_count * 2 and n_jobs * 4
+                    chunk_size = min(cpu_count() * 2, self._n_jobs * 4)
+                for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
+                    self._stop_by_max_time_mins()
                     
-                #     if self.use_dask:
-                #         import dask
+                    if self.use_dask:
+                        import dask
 
-                #         tmp_result_scores = [
-                #             partial_wrapped_cross_val_score(
-                #                 sklearn_pipeline=sklearn_pipeline
-                #             )
-                #             for sklearn_pipeline in sklearn_pipeline_list[
-                #                 chunk_idx : chunk_idx + chunk_size
-                #             ]
-                #         ]
+                        tmp_result_scores = [
+                            partial_scores(
+                                sklearn_pipeline=sklearn_pipeline
+                            )
+                            for sklearn_pipeline in sklearn_pipeline_list[
+                                chunk_idx : chunk_idx + chunk_size
+                            ]
+                        ]
 
                         
-                #         with warnings.catch_warnings():
-                #             warnings.simplefilter("ignore")
-                #             tmp_result_scores = list(dask.compute(*tmp_result_scores, num_workers=self.n_jobs))
+                        with warnings.catch_warnings():
+                            warnings.simplefilter("ignore")
+                            tmp_result_scores = list(dask.compute(*tmp_result_scores, num_workers=self.n_jobs))
 
-                #     else:
-
-                #         parallel = Parallel(
-                #             n_jobs=self._n_jobs, verbose=0, pre_dispatch="2*n_jobs"
-                #         )
-                #         tmp_result_scores = parallel(
-                #             delayed(partial_wrapped_cross_val_score)(
-                #                 sklearn_pipeline=sklearn_pipeline
-                #             )
-                #             for sklearn_pipeline in sklearn_pipeline_list[
-                #                 chunk_idx : chunk_idx + chunk_size
-                #             ]
-                #         )
-
+                    else:
+                        parallel = Parallel(
+                            n_jobs=self._n_jobs, verbose=0, pre_dispatch="2*n_jobs"
+                        )
+                        tmp_result_scores = parallel(
+                            delayed(partial_scores)(
+                                sklearn_pipeline=sklearn_pipeline
+                            )
+                            for sklearn_pipeline in sklearn_pipeline_list[
+                                chunk_idx : chunk_idx + chunk_size
+                            ]
+                        )
 
                     # update pbar
-                    # for val in tmp_result_scores:
-                    #     result_score_list = self._update_val(val, result_score_list)
+                    for val in tmp_result_scores:
+                        result_score_list = self._update_val(val, result_score_list)
+                    transposed_scores = np.array(tmp_result_scores).T.tolist()    
+                    # TODO - dinamizar listas como parametros 
+                    mo_scorer = Scorer(sils=transposed_scores[0], dbs=transposed_scores[1], chs=transposed_scores[2])
+                    mo_= getattr(mo_scorer, mo_function)
+                    result_score_list = mo_().tolist()
     
         except (KeyboardInterrupt, SystemExit, StopIteration) as e:
             if self.verbosity > 0:
@@ -1634,9 +1645,9 @@ class TPOTBase(BaseEstimator):
                     self.evaluated_individuals_[ind_str]["operator_count"],
                     self.evaluated_individuals_[ind_str]["internal_cv_score"],
                 )
-
-            self._pareto_front.update(individuals[:num_eval_ind])
-
+            
+            # self._pareto_front.update(individuals[:num_eval_ind])
+            self._pareto_front = self._update(individuals[:num_eval_ind])
             self._pop = population
             raise KeyboardInterrupt
         
@@ -1651,10 +1662,10 @@ class TPOTBase(BaseEstimator):
                 self.evaluated_individuals_[ind_str]["internal_cv_score"],
             )
         individuals = [ind for ind in population if not ind.fitness.valid]
-        self._pareto_front.update(population)
+        self._update(population)
 
         return population
-
+    
     def _preprocess_individuals(self, individuals):
         """Preprocess DEAP individuals before pipeline evaluation.
 
