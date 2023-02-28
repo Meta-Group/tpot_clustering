@@ -55,7 +55,7 @@ clustering_config_dict = {
         'init': ['k-means++', 'random'],
         'algorithm': ['lloyd', 'elkan'],
         'max_iter': np.arange(100, 600, 100),
-        'n_init':['auto']
+        'n_init': range(2,21)
     },
 
     'sklearn.cluster.BisectingKMeans': {
