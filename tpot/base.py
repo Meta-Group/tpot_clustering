@@ -588,6 +588,9 @@ class TPOTBase(BaseEstimator):
         # initialization for fit function
 
         if not self.warm_start or not hasattr(self, "_pareto_front"):
+            self._best_overall_pipeline = None
+            self._scores = None
+            self._n_clusters = None
             self._pop = []
             self._pareto_front = None
             self._last_optimized_pareto_front = None
@@ -688,7 +691,7 @@ class TPOTBase(BaseEstimator):
         """
         raise ValueError("Use TPOTClassifier or TPOTRegressor pr TPOTClusterer")
 
-    def fit(self, features, target=None, sample_weight=None, groups=None, mo_function=None):
+    def fit(self, features, target=None, sample_weight=None, groups=None, mo_function=None, scorers=None):
         """Fit an optimized machine learning pipeline.
 
         Uses genetic programming to optimize a machine learning pipeline that
@@ -752,7 +755,7 @@ class TPOTBase(BaseEstimator):
         if self.random_state is not None:
             random.seed(self.random_state)  # deap uses random
             np.random.seed(self.random_state)
-
+        self.scorers = scorers
         self._start_datetime = datetime.now()
         self._last_pipeline_write = self._start_datetime
         self._toolbox.register(
@@ -763,6 +766,7 @@ class TPOTBase(BaseEstimator):
             target=target,
             sample_weight=sample_weight,
             groups=groups,
+            scorers=scorers
         )
 
         # assign population, self._pop can only be not None if warm_start is enabled
@@ -856,7 +860,7 @@ class TPOTBase(BaseEstimator):
                         self._pbar.close()
 
                     self._update_top_pipeline()
-                    self._summary_of_best_pipeline(features, target)
+                    self._summary_of_best_pipeline(features)
                     # Delete the temporary cache before exiting
                     self._cleanup_memory()
                     break
@@ -967,16 +971,13 @@ class TPOTBase(BaseEstimator):
                 "A pipeline has not yet been optimized. Please call fit() first."
             )
 
-    def _summary_of_best_pipeline(self, features, target):
+    def _summary_of_best_pipeline(self, features):
         """Print out best pipeline at the end of optimization process.
 
         Parameters
         ----------
         features: array-like {n_samples, n_features}
             Feature matrix
-
-        target: array-like {n_samples}
-            List of class labels for prediction
 
         Returns
         -------
@@ -996,7 +997,8 @@ class TPOTBase(BaseEstimator):
             self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                self.fitted_pipeline_.fit(features, target)
+                self.fitted_pipeline_.fit(features)
+                labels = self.fitted_pipeline_.fit(features)[-1].labels_
 
             if self.verbosity in [1, 2]:
                 # Add an extra line of spacing if the progress bar was used
@@ -1007,7 +1009,39 @@ class TPOTBase(BaseEstimator):
                     self._optimized_pipeline
                 )
                 print("Best Overall Pipeline:", optimized_pipeline_str)
+            
+            partial_scores = partial(
+                _wrapped_multi_object_validation,
+                features=features,
+                timeout=max(int(self.max_eval_time_mins * 60), 1),
+                use_dask=self.use_dask,
+                scorers=self.scorers
+            )
+            
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                val = partial_scores(
+                    sklearn_pipeline=self.fitted_pipeline_
+                )
 
+            sil = '-'
+            dbs = '-'
+            chs = '-'
+            bic = '-'
+
+            if "sil" in val:
+                sil = val["sil"]
+            if "dbs" in val:
+                dbs = val["dbs"]
+            if "chs" in val:
+                chs = val["chs"]
+            if "bic" in val:
+                bic = val["bic"]    
+                    
+            self._scores = {"sil": sil, "dbs": dbs, "chs": chs, "bic": bic}
+            self._best_overall_pipeline = optimized_pipeline_str
+            self._n_clusters = len(set(labels))
+            
             # Store and fit the entire Pareto front as fitted models for convenience
             self.pareto_front_fitted_pipelines_ = {}
 
@@ -1018,7 +1052,7 @@ class TPOTBase(BaseEstimator):
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     self.pareto_front_fitted_pipelines_[str(pipeline)].fit(
-                        features, target
+                        features
                     )
 
     def predict(self, features):
@@ -1306,8 +1340,9 @@ class TPOTBase(BaseEstimator):
                 output_file.write(to_write)
         else:
             return to_write
-    def get_best_score(self):
-        return self._optimized_pipeline_score
+        
+    def get_run_stats(self):
+        return self._best_overall_pipeline, self._scores, self._n_clusters
 
     def _impute_values(self, features):
         """Impute missing values in a feature set.
@@ -1489,7 +1524,7 @@ class TPOTBase(BaseEstimator):
         return stats
 
     def _evaluate_individuals(
-        self, population, features, target=None, sample_weight=None, groups=None, mo_function=None
+        self, population, features, target=None, sample_weight=None, groups=None, mo_function=None,scorers=None
     ):
         """Determine the fit of the provided individuals.
 
@@ -1533,11 +1568,12 @@ class TPOTBase(BaseEstimator):
         partial_scores = partial(
                 _wrapped_multi_object_validation,
                 features=features,
-                scoring_function=self.scoring_function,
-                sample_weight=sample_weight,
-                groups=groups,
+                # scoring_function=self.scoring_function,
+                # sample_weight=sample_weight,
+                # groups=groups,
                 timeout=max(int(self.max_eval_time_mins * 60), 1),
                 use_dask=self.use_dask,
+                scorers=scorers
         )  
 
         result_score_list = []
@@ -1553,22 +1589,34 @@ class TPOTBase(BaseEstimator):
                         sklearn_pipeline=sklearn_pipeline
                     )
                     result_score_list = self._update_val(val, result_score_list)
-                transposed_scores = np.array(result_score_list).T.tolist()
-                
-                # TODO - dinamizar listas como parametros 
-                mo_scorer = Scorer(sils=transposed_scores[0], dbs=transposed_scores[1], chs=transposed_scores[2])
-                mo_= getattr(mo_scorer, mo_function)
-                # original_values = result_score_list
-                result_score_list = mo_().tolist()
-                # print("\n================================================\n")
-                # print(f"\n Mo Scores: {result_score_list}")
-                # print(f"\n>>> Scores Individuals: {len(sklearn_pipeline_list)}\n")
-                # [print(f"Individual {individual}") for individual in sklearn_pipeline_list]
+                dicionario_listas = {}
+                for chave in result_score_list[0]:
+                    valores_chave = [dic[chave] for dic in result_score_list]
+                    dicionario_listas[chave] = valores_chave
+                try:
+                    sils = None
+                    dbs = None
+                    chs = None
+                    if "sil" in dicionario_listas:
+                        sils = dicionario_listas["sil"]
+                    if "dbs" in dicionario_listas:
+                        dbs = dicionario_listas["dbs"]
+                    if "chs" in dicionario_listas:
+                        chs = dicionario_listas["chs"]
+                        
+                    mo_scorer = Scorer(sils=sils, dbs=dbs, chs=chs)
+                    mo_= getattr(mo_scorer, mo_function)
+                    result_score_list = mo_().tolist()
+                    # print("\n================================================\n")
+                    # print(f"\n Mo Scores: {result_score_list}")
+                    # [print(f"Individual {individual}") for individual in sklearn_pipeline_list]
 
-                # for i in range(0,len(sklearn_pipeline_list)):
-                #     print(f"\nScorers: {original_values[i]}")
-                #     print(f"Mo Score: {result_score_list[i]}")
-                #     print(f"\n {sklearn_pipeline_list[i]}")
+                    # for i in range(0,len(sklearn_pipeline_list)):
+                    #     print(f"\nScorers: {original_values[i]}")
+                    #     print(f"Mo Score: {result_score_list[i]}")
+                    #     print(f"\n {sklearn_pipeline_list[i]}")
+                except Exception as e:
+                    print(e)
 
             else:
                 # chunk size for pbar update
@@ -1614,12 +1662,26 @@ class TPOTBase(BaseEstimator):
                     # update pbar
                     for val in tmp_result_scores:
                         result_score_list = self._update_val(val, result_score_list)
-                    transposed_scores = np.array(tmp_result_scores).T.tolist()    
-                    # TODO - dinamizar listas como parametros 
-                    mo_scorer = Scorer(sils=transposed_scores[0], dbs=transposed_scores[1], chs=transposed_scores[2])
+                    # transposed_scores = np.array(tmp_result_scores).T.tolist()    
+                    
+                    dicionario_listas = {}
+                    for chave in tmp_result_scores[0]:
+                        valores_chave = [dic[chave] for dic in tmp_result_scores]
+                        dicionario_listas[chave] = valores_chave    
+                    sils = None
+                    dbs = None
+                    chs = None
+                    if "sil" in dicionario_listas:
+                        sils = dicionario_listas["sil"]
+                    if "dbs" in dicionario_listas:
+                        dbs = dicionario_listas["dbs"]
+                    if "chs" in dicionario_listas:
+                        chs = dicionario_listas["chs"]
+                        
+                    mo_scorer = Scorer(sils=sils, dbs=dbs, chs=chs)
                     mo_= getattr(mo_scorer, mo_function)
                     result_score_list = mo_().tolist()
-    
+                    
         except (KeyboardInterrupt, SystemExit, StopIteration) as e:
             if self.verbosity > 0:
                 self._pbar.write("", file=self.log_file_)

@@ -514,8 +514,7 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             return -float('inf')
 
 @threading_timeoutable(default="Timeout")
-def _wrapped_multi_object_validation(sklearn_pipeline, features, scoring_function, 
-                                    sample_weight=None,groups=None, use_dask=False):
+def _wrapped_multi_object_validation(sklearn_pipeline, features, scorers, use_dask=False):
     """Fit estimator and compute scores for a given dataset split.
 
     Parameters
@@ -534,8 +533,10 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scoring_functio
     use_dask : bool, default False
         Whether to use dask
     """
+    erro_ = {scorer: 0 for scorer in scorers}
+    # print(sklearn_pipeline)
     try:
-        sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
+        # sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
         estimator = sklearn_pipeline.fit(features)
         labels = estimator[-1].labels_
         temp_features = features
@@ -544,47 +545,42 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scoring_functio
             if getattr(operator, "_estimator_type", None) != "clusterer":
                 temp_features = operator.fit_transform(temp_features)
 
-        if score_individual_(temp_features, labels):
-            return score_individual_(temp_features, labels)
+        if score_individual_(temp_features, labels, scorers):
+            return score_individual_(temp_features, labels, scorers)
     except TimeoutException:
         return "Timeout"                   
     except Exception as e:
-        return [0,0,0]
+        # print(f"ERRO pipeline eval: {e}")
+        return erro_
 
-def score_individual_(temp_features,labels):
+def score_individual_(temp_features,labels,scorers):
+    erro_ = {scorer: 0 for scorer in scorers}
+    calculated = {}
     try:
-        # TODO - Checar se tem target para ativar métricar supervisionadas  
-        # nmis = metrics.normalized_mutual_info_score(
-        #                 temp_features,
-        #                 labels,
-        #                 )
-
-        # homos = metrics.homogeneity_score(
-        #                 temp_features,
-        #                 labels,
-        #                 )
-
-        # comps = metrics.completeness_score(
-        #                 temp_features,
-        #                 labels,
-        #                 )
-        sils = metrics.silhouette_score(
-                            temp_features,
-                            labels,
-                            )
-        dbs = metrics.davies_bouldin_score(
+        if "sil" in scorers:
+            sil = metrics.silhouette_score(
+                                temp_features,
+                                labels,
+                                )
+            calculated['sil'] = sil
+        if "dbs" in scorers:
+            dbs = metrics.davies_bouldin_score(
                         temp_features,
                         labels,
                         )
-
-        chs = metrics.calinski_harabasz_score(
+            calculated['dbs'] = dbs
+            
+        if "chs" in scorers:
+            chs = metrics.calinski_harabasz_score(
                         temp_features,
                         labels,
                         )
-        
+            calculated['chs'] = chs
+
         # bic = log(n)*k-2log(L)
-
-        return [sils, dbs, chs]
+        
+        return calculated
     except Exception as e:
-        return [0,0,0]
+        # print(f"ERRO score ind: {e}")
+        return erro_
 
