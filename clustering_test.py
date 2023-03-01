@@ -9,7 +9,7 @@ run_times = "5"
 
 for i in range(0, 3630):
     api_token = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIwODNjNDRiNS02MDM4LTQ2NGEtYWQwMC00OGRhYjcwODc0ZDIifQ=="
-    project_name = "MaleLab/Tpot4ClusteringLight"
+    project_name = "MaleLab/TPOT4ClusteringLight"
     project = neptune.init_project(project=project_name, api_token=api_token)
     
     columns = [
@@ -51,7 +51,7 @@ for i in range(0, 3630):
     dataset = pd.read_csv(f"datasets/{dataset_name}.csv")
     
     run = neptune.init_run(
-        project="MaleLab/Tpot4Clustering", with_id=run_id, api_token=api_token
+        project="MaleLab/TPOT4ClusteringLight", with_id=run_id, api_token=api_token
     )
 
     _scorers = []
