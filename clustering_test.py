@@ -77,7 +77,7 @@ for i in range(0, 3630):
 
     pipeline, scores, clusters = clusterer.get_run_stats()
     
-    run["clusters"] = clusters
+    run["clusters"] = str(clusters)
     run["scorers/sil"].append(scores["sil"])
     run["scorers/chz"].append(scores["chs"])
     run["scorers/dbi"].append(scores["dbs"])
