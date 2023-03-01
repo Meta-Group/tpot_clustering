@@ -12,11 +12,6 @@ for i in range(0, 3630):
     project_name = "MaleLab/Tpot4Clustering"
     project = neptune.init_project(project=project_name, api_token=api_token)
     
-    run = neptune.init_run(
-        project="MaleLab/Tpot4Clustering", with_id=run_id, api_token=api_token
-    )
-    
-
     columns = [
         "sys/id",
         "dataset",
@@ -54,6 +49,10 @@ for i in range(0, 3630):
     sil = run["scorers/sil"].values[0]
 
     dataset = pd.read_csv(f"datasets/{dataset_name}.csv")
+    
+    run = neptune.init_run(
+        project="MaleLab/Tpot4Clustering", with_id=run_id, api_token=api_token
+    )
 
     _scorers = []
     if sil != "-":
