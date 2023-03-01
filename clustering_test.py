@@ -2,7 +2,7 @@ import tpot
 from tpot.tpot import TPOTClustering
 from sklearn.datasets import load_iris
 import pandas as pd
-import neptune.new as neptune
+import neptune
 
 iris = load_iris()
 run_times = "5"
