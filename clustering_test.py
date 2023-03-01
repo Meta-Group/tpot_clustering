@@ -9,7 +9,7 @@ run_times = "5"
 
 for i in range(0, 3630):
     api_token = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIwODNjNDRiNS02MDM4LTQ2NGEtYWQwMC00OGRhYjcwODc0ZDIifQ=="
-    project_name = "MaleLab/Tpot4Clustering"
+    project_name = "MaleLab/Tpot4ClusteringLight"
     project = neptune.init_project(project=project_name, api_token=api_token)
     
     columns = [
