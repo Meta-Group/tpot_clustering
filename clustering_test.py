@@ -11,6 +11,11 @@ for i in range(0, 3630):
     api_token = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIwODNjNDRiNS02MDM4LTQ2NGEtYWQwMC00OGRhYjcwODc0ZDIifQ=="
     project_name = "MaleLab/Tpot4Clustering"
     project = neptune.init_project(project=project_name, api_token=api_token)
+    
+    run = neptune.init_run(
+        project="MaleLab/Tpot4Clustering", with_id=run_id, api_token=api_token
+    )
+    
 
     columns = [
         "sys/id",
@@ -72,17 +77,13 @@ for i in range(0, 3630):
     clusterer.fit(dataset, mo_function=mo, scorers=_scorers)
 
     pipeline, scores, clusters = clusterer.get_run_stats()
-
-    run = neptune.init_run(
-        project="MaleLab/Tpot4Clustering", with_id=run_id, api_token=api_token
-    )
-
+    
     run["clusters"] = clusters
     run["scorers/sil"].append(scores["sil"])
     run["scorers/chz"].append(scores["chs"])
     run["scorers/dbi"].append(scores["dbs"])
     run["scorers/bic"].append(scores["bic"])
-    run["status"] = run_number + 1
+    run["status"] = str(run_number + 1)
 
     run.sync()
     run.stop()
