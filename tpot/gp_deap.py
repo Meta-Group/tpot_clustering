@@ -536,7 +536,6 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scorers, use_da
     erro_ = {scorer: 0 for scorer in scorers}
     # print(sklearn_pipeline)
     try:
-        # sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
         estimator = sklearn_pipeline.fit(features)
         labels = estimator[-1].labels_
         temp_features = features
