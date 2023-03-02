@@ -23,8 +23,8 @@ for i in range(0, 3630):
         "mo",
         "pipeline",
         "scorers/bic",
-        "scorers/chs",
-        "scorers/dbs",
+        "scorers/chz",
+        "scorers/dbi",
         "scorers/sil",
     ]
 
@@ -44,24 +44,24 @@ for i in range(0, 3630):
     run_id = run["sys/id"].values[0]
     run_number = int(run["status"].values[0])
     bic = run["scorers/bic"].values[0]
-    chs = run["scorers/chs"].values[0]
-    dbs = run["scorers/dbs"].values[0]
+    chs = run["scorers/chz"].values[0]
+    dbs = run["scorers/dbi"].values[0]
     sil = run["scorers/sil"].values[0]
 
     dataset = pd.read_csv(f"datasets/{dataset_name}.csv")
     
     run = neptune.init_run(
-        project="MaleLab/TPOT4ClusteringLight", with_id=run_id, api_token=api_token
+        project=project_name, with_id=run_id, api_token=api_token
     )
 
     _scorers = []
-    if sil != "-":
+    if sil != "None":
         _scorers.append("sil")
-    if dbs != "-":
+    if dbs != "None":
         _scorers.append("dbs")
-    if chs != "-":
+    if chs != "None":
         _scorers.append("chs")
-    if bic != "-":
+    if bic != "None":
         _scorers.append("bic")
 
     # config scorers
@@ -78,11 +78,11 @@ for i in range(0, 3630):
     pipeline, scores, clusters = clusterer.get_run_stats()
     
     run["clusters"] = str(clusters)
-    run["scorers/sil"].append(scores["sil"])
-    run["scorers/chs"].append(scores["chs"])
-    run["scorers/dbs"].append(scores["dbs"])
-    run["scorers/bic"].append(scores["bic"])
-    run["status"] = str(run_number + 1)
-
+    run["pipeline"] = pipeline
+    run["status"] = int(run["status"].fetch()) + 1
+    for scorer_name in _scorers:
+        scorer_key = f"scorers/{scorer_name}"
+        run[scorer_key] = float(run[scorer_key].fetch()) + round(scores[scorer_name], 4)
+    
     run.sync()
     run.stop()
