@@ -5,7 +5,7 @@ import pandas as pd
 import neptune
 
 iris = load_iris()
-run_times = "5"
+run_times = 5
 
 for i in range(0, 3630):
     api_token = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIwODNjNDRiNS02MDM4LTQ2NGEtYWQwMC00OGRhYjcwODc0ZDIifQ=="
@@ -31,7 +31,7 @@ for i in range(0, 3630):
     runs_table_df = project.fetch_runs_table(columns=columns).to_pandas()
 
     run = runs_table_df[
-        (runs_table_df["status"] < run_times) & (str(runs_table_df["scorers/bic"]) == "None")
+    (runs_table_df["status"] < run_times) & (runs_table_df["scorers/bic"] == "None")
     ].sample()
 
     if run.empty:
