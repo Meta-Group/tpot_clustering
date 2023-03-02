@@ -23,8 +23,8 @@ for i in range(0, 3630):
         "mo",
         "pipeline",
         "scorers/bic",
-        "scorers/chz",
-        "scorers/dbi",
+        "scorers/chs",
+        "scorers/dbs",
         "scorers/sil",
     ]
 
@@ -44,8 +44,8 @@ for i in range(0, 3630):
     run_id = run["sys/id"].values[0]
     run_number = int(run["status"].values[0])
     bic = run["scorers/bic"].values[0]
-    chs = run["scorers/chz"].values[0]
-    dbs = run["scorers/dbi"].values[0]
+    chs = run["scorers/chs"].values[0]
+    dbs = run["scorers/dbs"].values[0]
     sil = run["scorers/sil"].values[0]
 
     dataset = pd.read_csv(f"datasets/{dataset_name}.csv")
