@@ -31,7 +31,7 @@ for i in range(0, 3630):
     runs_table_df = project.fetch_runs_table(columns=columns).to_pandas()
 
     run = runs_table_df[
-        (runs_table_df["status"] < run_times) & (runs_table_df["scorers/bic"] == "None")
+        (runs_table_df["status"] < run_times) & (str(runs_table_df["scorers/bic"]) == "None")
     ].sample()
 
     if run.empty:
