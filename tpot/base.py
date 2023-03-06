@@ -915,6 +915,7 @@ class TPOTBase(BaseEstimator):
             for pipeline, pipeline_scores in zip(
                 self._pareto_front.items, reversed(self._pareto_front.keys)
             ):
+                print(f"Pipeline Scores: {pipeline_scores.wvalues[1]}")
                 if pipeline_scores.wvalues[1] > self._optimized_pipeline_score:
                     self._optimized_pipeline = pipeline
                     self._optimized_pipeline_score = pipeline_scores.wvalues[1]
@@ -1590,9 +1591,14 @@ class TPOTBase(BaseEstimator):
                     )
                     result_score_list = self._update_val(val, result_score_list)
                 dicionario_listas = {}
+                # print(f"Scores: {result_score_list}")
                 for chave in result_score_list[0]:
+                    # print(f"Chave: {chave}")
+                    # [print(f"Dic: {dic}") for dic in result_score_list]
+                    # [print(f"Valor: {dic[chave]}") for dic in result_score_list]
                     valores_chave = [dic[chave] for dic in result_score_list]
                     dicionario_listas[chave] = valores_chave
+                
                 try:
                     sils = None
                     dbs = None
@@ -1616,7 +1622,7 @@ class TPOTBase(BaseEstimator):
                     #     print(f"Mo Score: {result_score_list[i]}")
                     #     print(f"\n {sklearn_pipeline_list[i]}")
                 except Exception as e:
-                    print(e)
+                    print(f"Exception Scoring: {e}")
 
             else:
                 # chunk size for pbar update
@@ -1683,6 +1689,7 @@ class TPOTBase(BaseEstimator):
                     result_score_list = mo_().tolist()
                     
         except (KeyboardInterrupt, SystemExit, StopIteration) as e:
+            # quit()
             if self.verbosity > 0:
                 self._pbar.write("", file=self.log_file_)
                 self._pbar.write(
@@ -2047,6 +2054,8 @@ class TPOTBase(BaseEstimator):
             A updated list of CV scores
         """
         self._update_pbar()
+        erro_ = {scorer: 0.0 for scorer in self.scorers}
+        # todo - remover timeouts
         if val == "Timeout":
             self._update_pbar(
                 pbar_msg=(
@@ -2054,8 +2063,8 @@ class TPOTBase(BaseEstimator):
                     "Continuing to the next pipeline.".format(self._pbar.n)
                 )
             )
-            result_score_list.append([-1,10,0])
-            # result_score_list.append(-float("inf"))
+            
+            result_score_list.append(erro_)
         elif val is not None:
             result_score_list.append(val)
         return result_score_list

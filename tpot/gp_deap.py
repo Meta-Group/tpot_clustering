@@ -547,13 +547,13 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scorers, use_da
         if score_individual_(temp_features, labels, scorers):
             return score_individual_(temp_features, labels, scorers)
     except TimeoutException:
-        return "Timeout"                   
+        return erro_                   
     except Exception as e:
         # print(f"ERRO pipeline eval: {e}")
         return erro_
 
 def score_individual_(temp_features,labels,scorers):
-    erro_ = {scorer: 0 for scorer in scorers}
+    erro_ = {scorer: 0.0 for scorer in scorers}
     calculated = {}
     try:
         if "sil" in scorers:
@@ -561,20 +561,20 @@ def score_individual_(temp_features,labels,scorers):
                                 temp_features,
                                 labels,
                                 )
-            calculated['sil'] = sil
+            calculated['sil'] = round(sil, 4)
         if "dbs" in scorers:
             dbs = metrics.davies_bouldin_score(
                         temp_features,
                         labels,
                         )
-            calculated['dbs'] = dbs
+            calculated['dbs'] = round(dbs, 4)
             
         if "chs" in scorers:
             chs = metrics.calinski_harabasz_score(
                         temp_features,
                         labels,
                         )
-            calculated['chs'] = chs
+            calculated['chs'] = round(chs, 4)
 
         # bic = log(n)*k-2log(L)
         
