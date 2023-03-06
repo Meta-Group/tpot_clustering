@@ -618,7 +618,7 @@ class TPOTBase(BaseEstimator):
             self.operators_context = {
                 "make_pipeline": make_pipeline_func,
                 "make_union": make_union,
-                "StackingEstimator": StackingEstimator,
+                # "StackingEstimator": StackingEstimator,
                 "FunctionTransformer": FunctionTransformer,
                 "copy": copy,
             }

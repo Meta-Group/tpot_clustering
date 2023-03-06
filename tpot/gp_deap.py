@@ -534,7 +534,7 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scorers, use_da
         Whether to use dask
     """
     erro_ = {scorer: 0 for scorer in scorers}
-    # print(sklearn_pipeline)
+    print(f"Fitting: {sklearn_pipeline}")
     try:
         estimator = sklearn_pipeline.fit(features)
         labels = estimator[-1].labels_
