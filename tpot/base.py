@@ -854,11 +854,12 @@ class TPOTBase(BaseEstimator):
             attempts = 10
             for attempt in range(attempts):
                 try:
+                    # print(f"Attepmts {attempts}")
                     # Close the progress bar
                     # Standard truthiness checks won't work for tqdm
                     if not isinstance(self._pbar, type(None)):
                         self._pbar.close()
-
+                    
                     self._update_top_pipeline()
                     self._summary_of_best_pipeline(features)
                     # Delete the temporary cache before exiting
@@ -867,6 +868,7 @@ class TPOTBase(BaseEstimator):
 
                 except (KeyboardInterrupt, SystemExit, Exception) as e:
                     # raise the exception if it's our last attempt
+                    print(f"Erro! ===>{e}")
                     if attempt == (attempts - 1):
                         raise e
             return self
@@ -915,7 +917,6 @@ class TPOTBase(BaseEstimator):
             for pipeline, pipeline_scores in zip(
                 self._pareto_front.items, reversed(self._pareto_front.keys)
             ):
-                print(f"Pipeline Scores: {pipeline_scores.wvalues[1]}")
                 if pipeline_scores.wvalues[1] > self._optimized_pipeline_score:
                     self._optimized_pipeline = pipeline
                     self._optimized_pipeline_score = pipeline_scores.wvalues[1]
@@ -1484,7 +1485,7 @@ class TPOTBase(BaseEstimator):
     def _update(self, population):
         self._pareto_front.clear()
         best_pipeline = ''    
-        
+        # [print(f"Population: {individual}") for individual in population]
         for ind in population:
             if best_pipeline:
                 if ind.fitness.dominates(best_pipeline.fitness):
@@ -1593,9 +1594,6 @@ class TPOTBase(BaseEstimator):
                 dicionario_listas = {}
                 # print(f"Scores: {result_score_list}")
                 for chave in result_score_list[0]:
-                    # print(f"Chave: {chave}")
-                    # [print(f"Dic: {dic}") for dic in result_score_list]
-                    # [print(f"Valor: {dic[chave]}") for dic in result_score_list]
                     valores_chave = [dic[chave] for dic in result_score_list]
                     dicionario_listas[chave] = valores_chave
                 
@@ -1613,14 +1611,7 @@ class TPOTBase(BaseEstimator):
                     mo_scorer = Scorer(sils=sils, dbs=dbs, chs=chs)
                     mo_= getattr(mo_scorer, mo_function)
                     result_score_list = mo_().tolist()
-                    # print("\n================================================\n")
-                    # print(f"\n Mo Scores: {result_score_list}")
-                    # [print(f"Individual {individual}") for individual in sklearn_pipeline_list]
-
-                    # for i in range(0,len(sklearn_pipeline_list)):
-                    #     print(f"\nScorers: {original_values[i]}")
-                    #     print(f"Mo Score: {result_score_list[i]}")
-                    #     print(f"\n {sklearn_pipeline_list[i]}")
+                    
                 except Exception as e:
                     print(f"Exception Scoring: {e}")
 
@@ -1689,6 +1680,7 @@ class TPOTBase(BaseEstimator):
                     result_score_list = mo_().tolist()
                     
         except (KeyboardInterrupt, SystemExit, StopIteration) as e:
+            print(f"Error ---> {e}")
             # quit()
             if self.verbosity > 0:
                 self._pbar.write("", file=self.log_file_)

@@ -231,28 +231,17 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     for ind in population:
         initialize_stats_dict(ind)
 
-    # print("\n>>> Populacao Inicial:\n")
-    # [print(f"Individual: {pipeline}") for pipeline in population]
-    # print("\n")
-
     population[:] = toolbox.evaluate(population)
     record = stats.compile(population) if stats is not None else {}
     logbook.record(gen=0, nevals=len(population), **record)
 
-    # [print(f"\n>>> Current HOF GP: {hof}") for hof in halloffame]
-    # print("\n======================================================================================================================\n")
     # Begin the generational process
     for gen in range(1, ngen + 1):
-        # print(f"\n>>> Gen: {gen} Population:\n")
-        # [print(f"Individual: {pipeline}") for pipeline in population]
+        print(f"Gen: {gen}")
         
         # Vary the population
         offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
-        # [print(f"\n>>> Previous HOF:\n {hof}") for hof in halloffame]
         [offspring.append(hof) for hof in halloffame if hof not in offspring]
-
-        # print("\n\n>>> Offspring Variacao Populacional:\n")
-        # [print(f"Individual: {pipeline}") for pipeline in offspring]
 
         # Update generation statistic for all individuals which have invalid 'generation' stats
         # This hold for individuals that have been altered in the varOr function
@@ -283,7 +272,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
         # print("\n>>> Mixed Population\n")
         # [print(f"Individual: {pipeline}") for pipeline in population]
         
-        # [print(f"\n>>> Current HOF GP: \n{hof}") for hof in halloffame]
+        [print(f"\n>>> Current HOF GP: \n{hof}") for hof in halloffame]
         
         # print("\n======================================================================================================================\n")
 
@@ -534,7 +523,7 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scorers, use_da
         Whether to use dask
     """
     erro_ = {scorer: 0 for scorer in scorers}
-    print(f"Fitting: {sklearn_pipeline}")
+    # print(f"Fitting: {sklearn_pipeline}")
     try:
         estimator = sklearn_pipeline.fit(features)
         labels = estimator[-1].labels_
