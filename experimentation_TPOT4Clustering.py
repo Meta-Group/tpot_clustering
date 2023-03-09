@@ -2,87 +2,128 @@ import tpot
 from tpot.tpot import TPOTClustering
 from sklearn.datasets import load_iris
 import pandas as pd
-import neptune
+import neptune.new as neptune
+import requests
+import json
 
-iris = load_iris()
-run_times = 5
 
-for i in range(0, 3630):
+def get_run_config():
+    find_one_url = "https://eu-central-1.aws.data.mongodb-api.com/app/data-vhbni/endpoint/data/v1/action/findOne"
+    headers = {
+        "Content-Type": "application/json",
+        "Access-Control-Request-Headers": "*",
+        "api-key": "tURg5ipsw8mFrPwY52B0d37bzsRQLyk1UFOjFz0fkicfra1FzlcrsDwOl4ctCymr",
+    }
+    payload = json.dumps(
+        {
+            "collection": "runs",
+            "database": "tpot",
+            "dataSource": "Malelab",
+            "filter": {"status": "active"},
+        }
+    )
+
+    response = requests.request("POST", find_one_url, headers=headers, data=payload)
+    _response = response.json()
+    return _response["document"]
+
+
+def update_run(run, status):
+    update_one_url = "https://eu-central-1.aws.data.mongodb-api.com/app/data-vhbni/endpoint/data/v1/action/updateOne"
+
+    headers = {
+        "Content-Type": "application/json",
+        "Access-Control-Request-Headers": "*",
+        "api-key": "tURg5ipsw8mFrPwY52B0d37bzsRQLyk1UFOjFz0fkicfra1FzlcrsDwOl4ctCymr",
+    }
+
+    payload = json.dumps(
+        {
+            "collection": "runs",
+            "database": "tpot",
+            "dataSource": "Malelab",
+            "filter": {
+                "_id": {"$oid": run["_id"]},
+            },
+            "update": {"$set": {"status": status}},
+        }
+    )
+
+    response = requests.request("POST", update_one_url, headers=headers, data=payload)
+    print(response.text)
+
+
+while 1:
     api_token = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIwODNjNDRiNS02MDM4LTQ2NGEtYWQwMC00OGRhYjcwODc0ZDIifQ=="
-    project_name = "MaleLab/TPOT4ClusteringLight"
-    project = neptune.init_project(project=project_name, api_token=api_token)
-    
-    columns = [
-        "sys/id",
-        "dataset",
-        "clusters",
-        "status",
-        "scorers/sil",
-        "gp/gen",
-        "gp/pop",
-        "mo",
-        "pipeline",
-        "scorers/bic",
-        "scorers/chs",
-        "scorers/dbs",
-        "scorers/sil",
-    ]
+    project_name = "MaleLab/Tpot4ClusteringLight"
+    run_config = get_run_config()
+    if not run_config:
+        print("\n\n0 Active runs --- bye")
+        quit()
 
-    runs_table_df = project.fetch_runs_table(columns=columns).to_pandas()
-
-    run = runs_table_df[
-    (runs_table_df["status"] < run_times) & (runs_table_df["scorers/bic"] == "None")
-    ].sample()
-
-    if run.empty:
-        exit()
-
-    dataset_name = run["dataset"].values[0]
-    mo = run["mo"].values[0]
-    gen = run["gp/gen"].values[0]
-    pop = run["gp/pop"].values[0]
-    run_id = run["sys/id"].values[0]
-    run_number = int(run["status"].values[0])
-    bic = run["scorers/bic"].values[0]
-    chs = run["scorers/chs"].values[0]
-    dbs = run["scorers/dbs"].values[0]
-    sil = run["scorers/sil"].values[0]
+    dataset_name = run_config["dataset"]
+    mo = run_config["mo"]
+    gen = run_config["gen"]
+    pop = run_config["pop"]
+    run_id = run_config["_id"]
+    run_number = run_config["status"]
+    bic = run_config["bic"]
+    chs = run_config["chs"]
+    dbs = run_config["dbs"]
+    sil = run_config["sil"]
 
     dataset = pd.read_csv(f"datasets/{dataset_name}.csv")
-    
-    run = neptune.init_run(
-        project=project_name, with_id=run_id, api_token=api_token
-    )
 
+    run = neptune.init_run(project=project_name, api_token=api_token)
     _scorers = []
-    if sil != "None":
+    if sil != "-":
         _scorers.append("sil")
-    if dbs != "None":
+    if dbs != "-":
         _scorers.append("dbs")
-    if chs != "None":
+    if chs != "-":
         _scorers.append("chs")
-    if bic != "None":
+    if bic != "-":
         _scorers.append("bic")
 
-    # config scorers
-    clusterer = TPOTClustering(
-        generations=int(gen),
-        population_size=int(pop),
-        verbosity=2,
-        config_dict=tpot.config.clustering_config_dict,
-        n_jobs=1,
+    print(
+        f"\n==================== TPOT CLUSTERING ==================== \n Run ID: {run_id} - Dataset: {dataset_name} - Scorers: {_scorers} - mo: {mo}"
     )
-    print(f"\n==================== TPOT CLUSTERING ==================== \n Run ID: {run_id} - Dataset: {dataset_name} - Scorers: {_scorers} - mo: {mo}")
-    clusterer.fit(dataset, mo_function=mo, scorers=_scorers)
+    try:
+        update_run(run_config, "occupied")
+        # config scorers
+        clusterer = TPOTClustering(
+            # generations=gen,
+            # population_size=pop,
+            generations=gen,
+            population_size=pop,
+            verbosity=2,
+            config_dict=tpot.config.clustering_config_dict,
+            n_jobs=1,
+        )
+        clusterer.fit(dataset, mo_function=mo, scorers=_scorers)
 
-    pipeline, scores, clusters = clusterer.get_run_stats()
-    
-    run["clusters"] = str(clusters)
-    run["pipeline"] = pipeline
-    run["status"] = int(run["status"].fetch()) + 1
-    for scorer_name in _scorers:
-        scorer_key = f"scorers/{scorer_name}"
-        run[scorer_key] = float(run[scorer_key].fetch()) + round(scores[scorer_name], 4)
-    
+        pipeline, scores, clusters = clusterer.get_run_stats()
+        print(f"Pipeline: {pipeline} Scores: {scores} Clusters: {clusters}")
+        run["_id"] = run_id
+        run["dataset"] = dataset_name
+        run["mo"] = mo
+        run["gen"] = gen
+        run["pop"] = pop
+        run["clusters"] = clusters
+        run["pipeline"] = pipeline
+        for scorer_name in _scorers:
+            run[scorer_name] = round(scores[scorer_name], 4)
+        update_run(run_config, "finished")
+
+    except Exception as e:
+        run["_id"] = run_id
+        run["dataset"] = dataset_name
+        run["mo"] = mo
+        run["gen"] = gen
+        run["pop"] = pop
+        run["error_msg"] = e
+        print(f"{e}")
+        update_run(run_config, "error")
+
     run.sync()
     run.stop()
