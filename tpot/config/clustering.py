@@ -32,7 +32,7 @@ clustering_config_dict = {
     # Clusterers
     
     'sklearn.cluster.AgglomerativeClustering': {
-        'n_clusters': range(2, 21),
+        'n_clusters': range(1, 105),
         'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
         'linkage': ['ward', 'complete', 'average', 'single'],
     },
@@ -40,7 +40,7 @@ clustering_config_dict = {
     'sklearn.cluster.Birch': {
         'threshold': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
         'branching_factor': [2, 5, 10, 25, 50, 100],
-        'n_clusters': range(2, 21),
+        'n_clusters': range(1, 105),
     },
 
     'sklearn.cluster.DBSCAN': {
@@ -51,14 +51,14 @@ clustering_config_dict = {
     },
 
     'sklearn.cluster.KMeans': {
-        'n_clusters': range(2, 21),
+        'n_clusters': range(1, 105),
         'init': ['k-means++', 'random'],
         'algorithm': ['lloyd', 'elkan'],
         'max_iter': np.arange(100, 600, 100)
     },
 
     'sklearn.cluster.BisectingKMeans': {
-        'n_clusters': range(2, 21),
+        'n_clusters': range(1, 105),
         'init': ['k-means++', 'random'],
         'algorithm': ['lloyd', 'elkan'],
         'max_iter': np.arange(100, 600, 100),
@@ -66,7 +66,7 @@ clustering_config_dict = {
     },
 
     'sklearn.cluster.MiniBatchKMeans': {
-        'n_clusters': range(2, 21),
+        'n_clusters': range(1, 105),
         'init': ['k-means++', 'random'],
         'max_iter': np.arange(100, 600, 100),
     },
@@ -85,7 +85,7 @@ clustering_config_dict = {
     },
 
     'sklearn.cluster.SpectralClustering': {
-        'n_clusters': range(2, 21),
+        'n_clusters': range(1, 105),
         'eigen_solver': ['arpack', 'lobpcg', 'amg'],
         'affinity': ['nearest_neighbors', 'rbf', 'precomputed', 'precomputed_nearest_neighbors'],
     },
