@@ -522,7 +522,8 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scorers, use_da
     use_dask : bool, default False
         Whether to use dask
     """
-    erro_ = {scorer: 0 for scorer in scorers}
+    scorers_map = {"sil":-1, "dbs": float("inf"), "chs":0}
+    erro_ = {key: scorers_map[key] for key in scorers_map if key in scorers}
     # print(f"Fitting: {sklearn_pipeline}")
     try:
         estimator = sklearn_pipeline.fit(features)
@@ -542,33 +543,39 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scorers, use_da
         return erro_
 
 def score_individual_(temp_features,labels,scorers):
-    erro_ = {scorer: 0.0 for scorer in scorers}
     calculated = {}
-    try:
-        if "sil" in scorers:
+
+    if "sil" in scorers:
+        try:
             sil = metrics.silhouette_score(
-                                temp_features,
-                                labels,
-                                )
+                            temp_features,
+                            labels,
+                            )
             calculated['sil'] = round(sil, 4)
-        if "dbs" in scorers:
+        except Exception as e:
+            calculated["sil"] = -1   
+
+    if "dbs" in scorers:
+        try:
             dbs = metrics.davies_bouldin_score(
                         temp_features,
                         labels,
                         )
             calculated['dbs'] = round(dbs, 4)
-            
-        if "chs" in scorers:
+        except Exception as e:
+            calculated["dbs"] = 10.0
+
+    if "chs" in scorers:
+        try:
             chs = metrics.calinski_harabasz_score(
                         temp_features,
                         labels,
                         )
             calculated['chs'] = round(chs, 4)
-
-        # bic = log(n)*k-2log(L)
-        
-        return calculated
-    except Exception as e:
-        # print(f"ERRO score ind: {e}")
-        return erro_
+        except Exception as e:
+            calculated["dbs"] = 0    
+    return calculated
+    # bic = log(n)*k-2log(L)
+    
+    
 
