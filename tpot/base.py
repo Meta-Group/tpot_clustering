@@ -1015,8 +1015,8 @@ class TPOTBase(BaseEstimator):
             partial_scores = partial(
                 _wrapped_multi_object_validation,
                 features=features,
-                timeout=max(int(self.max_eval_time_mins * 60), 1),
-                use_dask=self.use_dask,
+                # timeout=max(int(self.max_eval_time_mins * 60), 1),
+                # use_dask=self.use_dask,
                 scorers=self.scorers
             )
             
@@ -1592,7 +1592,7 @@ class TPOTBase(BaseEstimator):
                     )
                     result_score_list = self._update_val(val, result_score_list)
                 dicionario_listas = {}
-                print(f"Scores: {result_score_list}")
+                # print(f"Scores: {result_score_list}")
                 for chave in result_score_list[0]:
                     valores_chave = [dic[chave] for dic in result_score_list]
                     dicionario_listas[chave] = valores_chave

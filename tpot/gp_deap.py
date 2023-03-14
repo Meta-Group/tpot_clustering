@@ -534,7 +534,7 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scorers, use_da
     """
     scorers_map = {"sil":float(-1), "dbs": float(100), "chs":float(0)}
     erro_ = {key: scorers_map[key] for key in scorers_map if key in scorers}
-    # print(f"Fitting: {sklearn_pipeline}")
+    print(f"================\nPipeline: {sklearn_pipeline}")
     try:
         estimator = sklearn_pipeline.fit(features)
         labels = estimator[-1].labels_
@@ -544,8 +544,7 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scorers, use_da
             if getattr(operator, "_estimator_type", None) != "clusterer":
                 temp_features = operator.fit_transform(temp_features)
 
-        if score_individual_(temp_features, labels, scorers):
-            return score_individual_(temp_features, labels, scorers)
+        return score_individual_(temp_features, labels, scorers)
     except TimeoutException:
         print(f"ERRO Timeout eval: {e}")
         return erro_                   
@@ -585,6 +584,7 @@ def score_individual_(temp_features,labels,scorers):
             calculated["chs"] = round(chs, 4)
         except Exception as e:
             calculated["chs"] = float(0)    
+    print(f"Scores: {calculated}\n================")        
     return calculated
     # bic = log(n)*k-2log(L)
     
