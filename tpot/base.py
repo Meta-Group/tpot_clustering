@@ -446,7 +446,7 @@ class TPOTBase(BaseEstimator):
             )
 
     def _add_operators(self):
-        main_type = ["Classifier", "Regressor", "Selector", "Transformer"]
+        main_type = ["Classifier", "Regressor", "Selector", "Transformer", "Clusterer"]
         ret_types = []
         self.op_list = []
         if self.template == None:  # default pipeline structure
@@ -1573,8 +1573,8 @@ class TPOTBase(BaseEstimator):
                 # scoring_function=self.scoring_function,
                 # sample_weight=sample_weight,
                 # groups=groups,
-                timeout=max(int(self.max_eval_time_mins * 60), 1),
-                use_dask=self.use_dask,
+                # timeout=max(int(self.max_eval_time_mins * 60), 1),
+                # use_dask=self.use_dask,
                 scorers=scorers
         )  
 
@@ -1582,17 +1582,17 @@ class TPOTBase(BaseEstimator):
 
         try:
             # check time limit before pipeline evaluation
-            self._stop_by_max_time_mins()
+            # self._stop_by_max_time_mins()
             # Don't use parallelization if n_jobs==1
             if self._n_jobs == 1 and not self.use_dask:
                 for sklearn_pipeline in sklearn_pipeline_list:
-                    self._stop_by_max_time_mins()
+                    # self._stop_by_max_time_mins()
                     val = partial_scores(
                         sklearn_pipeline=sklearn_pipeline
                     )
                     result_score_list = self._update_val(val, result_score_list)
                 dicionario_listas = {}
-                # print(f"Scores: {result_score_list}")
+                print(f"Scores: {result_score_list}")
                 for chave in result_score_list[0]:
                     valores_chave = [dic[chave] for dic in result_score_list]
                     dicionario_listas[chave] = valores_chave
