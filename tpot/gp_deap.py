@@ -522,7 +522,7 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scorers, use_da
     use_dask : bool, default False
         Whether to use dask
     """
-    scorers_map = {"sil":-1, "dbs": float("inf"), "chs":0}
+    scorers_map = {"sil":float(-1), "dbs": float(100), "chs":float(0)}
     erro_ = {key: scorers_map[key] for key in scorers_map if key in scorers}
     # print(f"Fitting: {sklearn_pipeline}")
     try:
@@ -544,16 +544,16 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scorers, use_da
 
 def score_individual_(temp_features,labels,scorers):
     calculated = {}
-
+    
     if "sil" in scorers:
         try:
             sil = metrics.silhouette_score(
                             temp_features,
                             labels,
                             )
-            calculated['sil'] = round(sil, 4)
+            calculated["sil"] = round(sil, 4)
         except Exception as e:
-            calculated["sil"] = -1   
+            calculated["sil"] = float(-1)   
 
     if "dbs" in scorers:
         try:
@@ -561,9 +561,9 @@ def score_individual_(temp_features,labels,scorers):
                         temp_features,
                         labels,
                         )
-            calculated['dbs'] = round(dbs, 4)
+            calculated["dbs"] = round(dbs, 4)
         except Exception as e:
-            calculated["dbs"] = 10.0
+            calculated["dbs"] = float(100)
 
     if "chs" in scorers:
         try:
@@ -571,9 +571,9 @@ def score_individual_(temp_features,labels,scorers):
                         temp_features,
                         labels,
                         )
-            calculated['chs'] = round(chs, 4)
+            calculated["chs"] = round(chs, 4)
         except Exception as e:
-            calculated["dbs"] = 0    
+            calculated["chs"] = float(0)    
     return calculated
     # bic = log(n)*k-2log(L)
     
