@@ -163,3 +163,7 @@ class Scorer:
         """
 
         return np.array([1 - np.amax(x) for x in self._population])
+    
+    def xgb_reg(meta_features: list = None, sils: list = None, dbs: list = None):
+        print("xgb...")
+        return []

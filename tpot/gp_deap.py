@@ -27,6 +27,7 @@ import numpy as np
 from deap import tools, gp
 from inspect import isclass
 from .operator_utils import set_sample_weight
+from .meta_scorer import xgb_reg
 from sklearn.utils import indexable
 from sklearn.metrics import check_scoring
 from sklearn.model_selection._validation import _fit_and_score
@@ -52,14 +53,19 @@ def pick_two_individuals_eligible_for_crossover(population):
         Two individuals which are not the same, but share at least one primitive.
         Alternatively, if no such pair exists in the population, (None, None) is returned instead.
     """
-    primitives_by_ind = [set([node.name for node in ind if isinstance(node, gp.Primitive)])
-                         for ind in population]
+    primitives_by_ind = [
+        set([node.name for node in ind if isinstance(node, gp.Primitive)])
+        for ind in population
+    ]
     pop_as_str = [str(ind) for ind in population]
 
-    eligible_pairs = [(i, i+1+j) for i, ind1_prims in enumerate(primitives_by_ind)
-                                 for j, ind2_prims in enumerate(primitives_by_ind[i+1:])
-                                 if not ind1_prims.isdisjoint(ind2_prims) and
-                                    pop_as_str[i] != pop_as_str[i+1+j]]
+    eligible_pairs = [
+        (i, i + 1 + j)
+        for i, ind1_prims in enumerate(primitives_by_ind)
+        for j, ind2_prims in enumerate(primitives_by_ind[i + 1 :])
+        if not ind1_prims.isdisjoint(ind2_prims)
+        and pop_as_str[i] != pop_as_str[i + 1 + j]
+    ]
 
     # Pairs are eligible in both orders, this ensures that both orders are considered
     eligible_pairs += [(j, i) for (i, j) in eligible_pairs]
@@ -87,9 +93,9 @@ def mutate_random_individual(population, toolbox):
         An individual which is a mutated copy of one of the individuals in population,
         the returned individual does not have fitness.values
     """
-    idx = np.random.randint(0,len(population))
+    idx = np.random.randint(0, len(population))
     ind = population[idx]
-    ind, = toolbox.mutate(ind)
+    (ind,) = toolbox.mutate(ind)
     del ind.fitness.values
     return ind
 
@@ -133,7 +139,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
         if op_choice < cxpb:  # Apply crossover
             ind1, ind2 = pick_two_individuals_eligible_for_crossover(population)
             if ind1 is not None:
-                ind1_cx, _, evaluated_individuals_= toolbox.mate(ind1, ind2)
+                ind1_cx, _, evaluated_individuals_ = toolbox.mate(ind1, ind2)
                 del ind1.fitness.values
 
                 if str(ind1_cx) in evaluated_individuals_:
@@ -153,8 +159,9 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
     return offspring
 
+
 def initialize_stats_dict(individual):
-    '''
+    """
     Initializes the stats dict for individual
     The statistics initialized are:
         'generation': generation in which the individual was evaluated. Initialized as: 0
@@ -169,16 +176,28 @@ def initialize_stats_dict(individual):
     Returns
     -------
     object
-    '''
-    individual.statistics['generation'] = 0
-    individual.statistics['mutation_count'] = 0
-    individual.statistics['crossover_count'] = 0
-    individual.statistics['predecessor'] = 'ROOT',
+    """
+    individual.statistics["generation"] = 0
+    individual.statistics["mutation_count"] = 0
+    individual.statistics["crossover_count"] = 0
+    individual.statistics["predecessor"] = ("ROOT",)
 
 
-def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
-                   stats=None, halloffame=None, verbose=0,
-                   per_generation_function=None, log_file=None):
+def eaMuPlusLambda(
+    population,
+    toolbox,
+    mu,
+    lambda_,
+    cxpb,
+    mutpb,
+    ngen,
+    pbar,
+    stats=None,
+    halloffame=None,
+    verbose=0,
+    per_generation_function=None,
+    log_file=None,
+):
     """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
     :param population: A list of individuals.
     :param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution
@@ -225,101 +244,92 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     variation.
     """
     logbook = tools.Logbook()
-    logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
+    logbook.header = ["gen", "nevals"] + (stats.fields if stats else [])
 
     # Initialize statistics dict for the individuals in the population, to keep track of mutation/crossover operations and predecessor relations
     for ind in population:
         initialize_stats_dict(ind)
 
+    print("\n====\nInitial Population...")
     population[:] = toolbox.evaluate(population)
+    
     record = stats.compile(population) if stats is not None else {}
     logbook.record(gen=0, nevals=len(population), **record)
 
     # Begin the generational process
     for gen in range(1, ngen + 1):
-        try:
+        print(f"\n=======================================================\ngen: {gen}")
+        # Vary the population
+        offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
 
-            # Vary the population
-            offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
-            [offspring.append(hof) for hof in halloffame if hof not in offspring]
-        except Exception as e:
-            print(f"Variation Error {e}")
         # Update generation statistic for all individuals which have invalid 'generation' stats
         # This hold for individuals that have been altered in the varOr function
-        try:
-            for ind in offspring:
-                if ind.statistics['generation'] == 'INVALID':
-                    ind.statistics['generation'] = gen
-        except:
-            print(f"Erro verificacao {e}")
-        
-        try:
-            for ind in offspring:
-                del ind.fitness.values
-        except Exception as e:
-            print(f"Erro {e}")
+        for ind in offspring:
+            if ind.statistics["generation"] == "INVALID":
+                ind.statistics["generation"] = gen
 
-        try:
-            # Evaluate the individuals with an invalid fitness
-            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        except Exception as e:
-            print(f"Evaluation {e}")
+        # Evaluate the individuals with an invalid fitness
+        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+
+        print("\n====\nEvaluating...")
+        offspring = toolbox.evaluate(offspring)
         
         try:
-            offspring = toolbox.evaluate(offspring)
-        except Exception as e:
-            print(f"Error Evaluation")
-        # Select the next generation population
-        try:
+            # Select the next generation population
+            print("\n====\nNext Gen Population...")
             population[:] = toolbox.select(population + offspring, mu)
+            [print(individual) for individual in population]
         except Exception as e:
-            print(f"Selection Error {e}")
+            print(e)
+        # pbar process
+        [print(f"\nHOF: {hof}") for hof in halloffame.keys]
+        high_score = max(
+                    halloffame.keys[x].wvalues[1] for x in range(len(halloffame.keys))
+                )
         
-        # [print(f"\n>>> Current HOF GP: \n{hof}") for hof in halloffame]
+        print("\nGeneration {0} - Current "
+            "best internal CV score: {1}".format(gen, high_score),
+            file=log_file,
+            )
         
-        # print("\n======================================================================================================================\n")
-
-
         if not pbar.disable:
             # Print only the best individual fitness
             if verbose == 2:
-                try:
-                    high_score = max(halloffame.keys[x].wvalues[1] \
-                        for x in range(len(halloffame.keys)))
-                    pbar.write('\nGeneration {0} - Current '
-                                'best internal MO score: {1}'.format(gen,
-                                                            high_score),
+                high_score = max(
+                    halloffame.keys[x].wvalues[1] for x in range(len(halloffame.keys))
+                )
+                pbar.write(
+                    "\nGeneration {0} - Current "
+                    "best internal CV score: {1}".format(gen, high_score),
+                    file=log_file,
+                )
 
-                                file=log_file)
-                except Exception as e:
-                    print(f"HOF error {e}")    
             # Print the entire Pareto front
             elif verbose == 3:
-                pbar.write('\nGeneration {} - '
-                            'Current Pareto front scores:'.format(gen),
-                            file=log_file)
-                for pipeline, pipeline_scores in zip(halloffame.items, reversed(halloffame.keys)):
-                    pbar.write('\n{}\t{}\t{}'.format(
+                pbar.write(
+                    "\nGeneration {} - " "Current Pareto front scores:".format(gen),
+                    file=log_file,
+                )
+                for pipeline, pipeline_scores in zip(
+                    halloffame.items, reversed(halloffame.keys)
+                ):
+                    pbar.write(
+                        "\n{}\t{}\t{}".format(
                             int(pipeline_scores.wvalues[0]),
                             pipeline_scores.wvalues[1],
-                            pipeline
+                            pipeline,
                         ),
-                        file=log_file
+                        file=log_file,
                     )
 
-        try:
-            # after each population save a periodic pipeline
-            if per_generation_function is not None:
-                per_generation_function(gen)
-        except Exception as e:
-            print(f"Checkpoint error {e}")
-        
-        try:
-            # Update the statistics with the new population
-            record = stats.compile(population) if stats is not None else {}
-            logbook.record(gen=gen, nevals=len(invalid_ind), **record)
-        except Exception as e:
-            print(f"Error Longbook {e}")
+        # after each population save a periodic pipeline
+        if per_generation_function is not None:
+            per_generation_function(gen)
+
+        # Update the statistics with the new population
+        record = stats.compile(population) if stats is not None else {}
+        logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+
     return population, logbook
 
 
@@ -382,11 +392,11 @@ def mutNodeReplacement(individual, pset):
         if isclass(term):
             term = term()
         individual[index] = term
-    else:   # Primitive
+    else:  # Primitive
         # find next primitive if any
         rindex = None
         if index + 1 < len(individual):
-            for i, tmpnode in enumerate(individual[index + 1:], index + 1):
+            for i, tmpnode in enumerate(individual[index + 1 :], index + 1):
                 if isinstance(tmpnode, gp.Primitive) and tmpnode.ret in node.args:
                     rindex = i
                     break
@@ -403,7 +413,9 @@ def mutNodeReplacement(individual, pset):
                 rnode = individual[rindex]
                 rslice = individual.searchSubtree(rindex)
                 # find position for passing return values to next operator
-                position = np.random.choice([i for i, a in enumerate(new_node.args) if a == rnode.ret])
+                position = np.random.choice(
+                    [i for i, a in enumerate(new_node.args) if a == rnode.ret]
+                )
             else:
                 position = None
             for i, arg_type in enumerate(new_node.args):
@@ -414,18 +426,25 @@ def mutNodeReplacement(individual, pset):
                     new_subtree[i] = term
             # paste the subtree to new node
             if rindex:
-                new_subtree[position:position + 1] = individual[rslice]
+                new_subtree[position : position + 1] = individual[rslice]
             # combine with primitives
             new_subtree.insert(0, new_node)
             individual[slice_] = new_subtree
 
-    return individual,
+    return (individual,)
 
 
 @threading_timeoutable(default="Timeout")
-def _wrapped_cross_val_score(sklearn_pipeline, features, target,
-                             cv, scoring_function, sample_weight=None,
-                             groups=None, use_dask=False):
+def _wrapped_cross_val_score(
+    sklearn_pipeline,
+    features,
+    target,
+    cv,
+    scoring_function,
+    sample_weight=None,
+    groups=None,
+    use_dask=False,
+):
     """Fit estimator and compute scores for a given dataset split.
 
     Parameters
@@ -462,7 +481,9 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             import dask  # noqa
             from dask.delayed import Delayed
         except Exception as e:
-            msg = "'use_dask' requires the optional dask and dask-ml depedencies.\n{}".format(e)
+            msg = "'use_dask' requires the optional dask and dask-ml depedencies.\n{}".format(
+                e
+            )
             raise ImportError(msg)
 
         dsk, keys, n_splits = dask_ml.model_selection._search.build_graph(
@@ -475,33 +496,39 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             groups=groups,
             fit_params=sample_weight_dict,
             refit=False,
-            error_score=float('-inf'),
+            error_score=float("-inf"),
         )
 
         cv_results = Delayed(keys[0], dsk)
-        scores = [cv_results['split{}_test_score'.format(i)]
-                  for i in range(n_splits)]
+        scores = [cv_results["split{}_test_score".format(i)] for i in range(n_splits)]
         CV_score = dask.delayed(np.array)(scores)[:, 0]
         return dask.delayed(np.nanmean)(CV_score)
     else:
         try:
             with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                scores = [_fit_and_score(estimator=clone(sklearn_pipeline),
-                                         X=features,
-                                         y=target,
-                                         scorer=scorer,
-                                         train=train,
-                                         test=test,
-                                         verbose=0,
-                                         parameters=None,
-                                         error_score='raise',
-                                         fit_params=sample_weight_dict)
-                                    for train, test in cv_iter]
-                if isinstance(scores[0], list): #scikit-learn <= 0.23.2
+                warnings.simplefilter("ignore")
+                scores = [
+                    _fit_and_score(
+                        estimator=clone(sklearn_pipeline),
+                        X=features,
+                        y=target,
+                        scorer=scorer,
+                        train=train,
+                        test=test,
+                        verbose=0,
+                        parameters=None,
+                        error_score="raise",
+                        fit_params=sample_weight_dict,
+                    )
+                    for train, test in cv_iter
+                ]
+                if isinstance(scores[0], list):  # scikit-learn <= 0.23.2
                     CV_score = np.array(scores)[:, 0]
-                elif isinstance(scores[0], dict): # scikit-learn >= 0.24
-                    from sklearn.model_selection._validation import _aggregate_score_dicts
+                elif isinstance(scores[0], dict):  # scikit-learn >= 0.24
+                    from sklearn.model_selection._validation import (
+                        _aggregate_score_dicts,
+                    )
+
                     CV_score = _aggregate_score_dicts(scores)["test_scores"]
                 else:
                     raise ValueError("Incorrect output format from _fit_and_score!")
@@ -510,10 +537,11 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         except TimeoutException:
             return "Timeout"
         except Exception as e:
-            return -float('inf')
+            return -float("inf")
+
 
 # @threading_timeoutable(default="Timeout")
-def _wrapped_multi_object_validation(sklearn_pipeline, features, scorers, use_dask=False):
+def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask=False):
     """Fit estimator and compute scores for a given dataset split.
 
     Parameters
@@ -532,9 +560,7 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scorers, use_da
     use_dask : bool, default False
         Whether to use dask
     """
-    scorers_map = {"sil":float(-1), "dbs": float(100), "chs":float(0)}
-    erro_ = {key: scorers_map[key] for key in scorers_map if key in scorers}
-    print(f"================\nPipeline: {sklearn_pipeline}")
+
     try:
         estimator = sklearn_pipeline.fit(features)
         labels = estimator[-1].labels_
@@ -544,49 +570,46 @@ def _wrapped_multi_object_validation(sklearn_pipeline, features, scorers, use_da
             if getattr(operator, "_estimator_type", None) != "clusterer":
                 temp_features = operator.fit_transform(temp_features)
 
-        return score_individual_(temp_features, labels, scorers)
+        silhouete_score = metrics.silhouette_score(
+            temp_features,
+            labels,
+        )
+
+        daviesbouldin_score = metrics.davies_bouldin_score(
+            temp_features,
+            labels,
+        )
+        score = round(xgb_reg(meta_features=meta_features, sil=silhouete_score, dbs=daviesbouldin_score), 4)
+        print(f"\n K: {len(set(labels))} Surrogate Score: {score} Sil: {silhouete_score} Dbs: {daviesbouldin_score} Pipe: {str(sklearn_pipeline)}\n")
+        
+        return score
+
     except TimeoutException:
-        print(f"ERRO Timeout eval: {e}")
-        return erro_                   
+        print(f"ERRO Timeout: {e} Pipe: {str(sklearn_pipeline)}")
+        return "Timeout"
     except Exception as e:
-        print(f"ERRO pipeline eval: {e}")
-        return erro_
+        print(f"ERRO: {e} Pipe: {str(sklearn_pipeline)}")
+        return float("inf")
 
-def score_individual_(temp_features,labels,scorers):
+
+def _get_clustering_metrics(temp_features, labels):
     calculated = {}
-    
-    if "sil" in scorers:
-        try:
-            sil = metrics.silhouette_score(
-                            temp_features,
-                            labels,
-                            )
-            calculated["sil"] = round(sil, 4)
-        except Exception as e:
-            calculated["sil"] = float(-1)   
 
-    if "dbs" in scorers:
-        try:
-            dbs = metrics.davies_bouldin_score(
-                        temp_features,
-                        labels,
-                        )
-            calculated["dbs"] = round(dbs, 4)
-        except Exception as e:
-            calculated["dbs"] = float(100)
+    try:
+        sil = metrics.silhouette_score(
+            temp_features,
+            labels,
+        )
 
-    if "chs" in scorers:
-        try:
-            chs = metrics.calinski_harabasz_score(
-                        temp_features,
-                        labels,
-                        )
-            calculated["chs"] = round(chs, 4)
-        except Exception as e:
-            calculated["chs"] = float(0)    
-    print(f"Scores: {calculated}\n================")        
+        dbs = metrics.davies_bouldin_score(
+            temp_features,
+            labels,
+        )
+
+        calculated["sil"] = round(sil, 4)
+        calculated["dbs"] = round(dbs, 4)
+    except Exception as e:
+        calculated["sil"] = float("inf")
+        calculated["dbs"] = float("inf")
+
     return calculated
-    # bic = log(n)*k-2log(L)
-    
-    
-
