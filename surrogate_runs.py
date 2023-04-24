@@ -96,7 +96,7 @@ while 1:
     print(f"\n==================== TPOT CLUSTERING SURROGATE ==================== \n Run ID: {run_id} - Dataset: {dataset_name}")
 
     try:
-        # update_run(run_config, "occupied")
+        update_run(run_config, "occupied")
         clusterer = TPOTClustering(
             generations=gen,
             population_size=pop,
@@ -114,7 +114,7 @@ while 1:
         run["clusters"] = clusters
         run["pipeline"] = pipeline
         
-        # update_run(run_config, "finished")
+        update_run(run_config, "finished")
 
     except Exception as e:
         run["_id"] = run_id
