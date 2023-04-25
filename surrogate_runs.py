@@ -103,24 +103,21 @@ while 1:
             verbosity=2,
             config_dict=tpot.config.clustering_config_dict,
             n_jobs=1,
-            early_stop=int(gen*0.2)
+            # early_stop=int(gen*0.2)
         )
         clusterer.fit(dataset, meta_features=_meta_features)
 
-        pipeline, scores, clusters, labels = clusterer.get_run_stats()
+        pipeline, scores, clusters, labels, surrogate_score, gen_stats = clusterer.get_run_stats()
 
-        print(f"Pipeline: {pipeline} Scores: {scores} Clusters: {clusters}")
-        
+        print(f"Pipeline: {pipeline} Scores: {scores} Clusters: {clusters} Surrogate: {surrogate_score}")
+        run["sil"] = scores['sil']
+        run["dbs"] = scores['dbs']
         run["clusters"] = clusters
         run["pipeline"] = pipeline
-        
+        run["surrogate_score"] = surrogate_score
         update_run(run_config, "finished")
 
     except Exception as e:
-        run["_id"] = run_id
-        run["dataset"] = dataset_name
-        run["gen"] = gen
-        run["pop"] = pop
         run["error_msg"] = e
         print(f"{e}")
         update_run(run_config, "error")

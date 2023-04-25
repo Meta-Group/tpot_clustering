@@ -35,6 +35,7 @@ from multiprocessing import cpu_count
 import os
 import re
 import errno
+import math
 
 from tempfile import mkdtemp
 from shutil import rmtree
@@ -85,7 +86,6 @@ from .gp_types import Output_Array
 from .gp_deap import (
     eaMuPlusLambda,
     mutNodeReplacement,
-    _wrapped_cross_val_score,
     _wrapped_surrogate_score,
     _get_clustering_metrics,
     cxOnePoint,
@@ -593,6 +593,8 @@ class TPOTBase(BaseEstimator):
             self._scores = None
             self._n_clusters = None
             self._labels = None
+            self._gen_stats = None
+            self._surrogatescore = None
             self._pop = []
             self._pareto_front = None
             self._last_optimized_pareto_front = None
@@ -732,6 +734,7 @@ class TPOTBase(BaseEstimator):
 
         """
         self._fit_init()
+        
         # features, target = self._check_dataset(features, target, sample_weight)
         self._init_pretest(features, target)
         # # Randomly collect a subsample of training samples for pipeline optimization process.
@@ -860,7 +863,7 @@ class TPOTBase(BaseEstimator):
                         self._pbar.close()
                     
                     self._update_top_pipeline()
-                    self._summary_of_best_pipeline(features)
+                    self._summary_of_best_pipeline(features, meta_features)
                     # Delete the temporary cache before exiting
                     self._cleanup_memory()
                     break
@@ -970,7 +973,7 @@ class TPOTBase(BaseEstimator):
                 "A pipeline has not yet been optimized. Please call fit() first."
             )
 
-    def _summary_of_best_pipeline(self, features):
+    def _summary_of_best_pipeline(self, features, meta_features):
         """Print out best pipeline at the end of optimization process.
 
         Parameters
@@ -1012,14 +1015,9 @@ class TPOTBase(BaseEstimator):
                 if getattr(operator, "_estimator_type", None) != "clusterer":
                     temp_features = operator.fit_transform(temp_features)
             
-            partial_scores = partial(
-                _get_clustering_metrics,
-                temp_features=temp_features,
-                labels=labels,
-            )
-            
-            # print(_wrapped_surrogate_score(features=features, meta_features=self.meta_features))
-            val = partial_scores()
+            self._surrogatescore = _wrapped_surrogate_score(sklearn_pipeline= self.fitted_pipeline_, features=features, meta_features=meta_features)
+
+            val =  _get_clustering_metrics(temp_features=temp_features, labels=labels,)
 
             sil = '-'
             dbs = '-'
@@ -1333,7 +1331,7 @@ class TPOTBase(BaseEstimator):
             return to_write
         
     def get_run_stats(self):
-        return self._best_overall_pipeline, self._scores, self._n_clusters, self._labels
+        return self._best_overall_pipeline, self._scores, self._n_clusters, self._labels, self._surrogatescore, self._gen_stats
 
     def _impute_values(self, features):
         """Impute missing values in a feature set.
@@ -1470,6 +1468,21 @@ class TPOTBase(BaseEstimator):
                         total_mins_elapsed
                     )
                 )
+    
+    def _update(self, population):
+        self._pareto_front.clear()
+        best_pipeline = ''    
+        # print("UPDATE HOF")
+        # [print(f"Population: {individual.fitness.wvalues[1]}") for individual in population if not math.isinf(individual.fitness.wvalues[1])]
+        for ind in population:
+            if best_pipeline:
+                if ((ind.fitness.dominates(best_pipeline.fitness)) and not (math.isinf(ind.fitness.wvalues[1]))):
+                    # print(f"Old: {best_pipeline} New: {ind}")
+                    best_pipeline = ind
+            else:
+                # print(f"new pipeline:{ind}")
+                best_pipeline = ind    
+        self._pareto_front.insert(best_pipeline)
 
     def _combine_individual_stats(self, operator_count, cv_score, individual_stats):
         """Combine the stats with operator count and cv score and preprare to be written to _evaluated_individuals
@@ -1555,11 +1568,11 @@ class TPOTBase(BaseEstimator):
 
         try:
             # check time limit before pipeline evaluation
-            self._stop_by_max_time_mins()
+            # self._stop_by_max_time_mins()
             # Don't use parallelization if n_jobs==1
             if self._n_jobs == 1 and not self.use_dask:
                 for sklearn_pipeline in sklearn_pipeline_list:
-                    self._stop_by_max_time_mins()
+                    # self._stop_by_max_time_mins()
                     val = partial_scores(
                         sklearn_pipeline=sklearn_pipeline
                     )
@@ -1634,7 +1647,8 @@ class TPOTBase(BaseEstimator):
                     self.evaluated_individuals_[ind_str]["internal_cv_score"],
                 )
             
-            self._pareto_front.update(individuals[:num_eval_ind])
+            # self._pareto_front.update(individuals[:num_eval_ind])
+            self._pareto_front = self._update(individuals[:num_eval_ind])
             self._pop = population
             raise KeyboardInterrupt
         
@@ -1649,8 +1663,8 @@ class TPOTBase(BaseEstimator):
                 self.evaluated_individuals_[ind_str]["internal_cv_score"],
             )
         individuals = [ind for ind in population if not ind.fitness.valid]
-        self._pareto_front.update(population)
-
+        # self._pareto_front.update(population)
+        self._update(population)
         return population
     
     def _preprocess_individuals(self, individuals):
@@ -1724,13 +1738,13 @@ class TPOTBase(BaseEstimator):
                     pbar_msg="Invalid pipeline encountered. Skipping its evaluation."
                 )
             # Check if the individual was evaluated before
-            elif individual_str in self.evaluated_individuals_:
-                self._update_pbar(
-                    pbar_msg=(
-                        "Pipeline encountered that has previously been evaluated during the "
-                        "optimization process. Using the score from the previous evaluation."
-                    )
-                )
+            # elif individual_str in self.evaluated_individuals_:
+            #     self._update_pbar(
+            #         pbar_msg=(
+            #             "Pipeline encountered that has previously been evaluated during the "
+            #             "optimization process. Using the score from the previous evaluation."
+            #         )
+            #     )
             else:
                 try:
                     # Transform the tree expression into an sklearn pipeline
@@ -1745,7 +1759,7 @@ class TPOTBase(BaseEstimator):
                     self.evaluated_individuals_[
                         individual_str
                     ] = self._combine_individual_stats(
-                        5000.0, -float("inf"), individual.statistics
+                        5000.0, float("inf"), individual.statistics
                     )
                     self._update_pbar()
                     continue

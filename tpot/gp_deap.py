@@ -183,21 +183,9 @@ def initialize_stats_dict(individual):
     individual.statistics["predecessor"] = ("ROOT",)
 
 
-def eaMuPlusLambda(
-    population,
-    toolbox,
-    mu,
-    lambda_,
-    cxpb,
-    mutpb,
-    ngen,
-    pbar,
-    stats=None,
-    halloffame=None,
-    verbose=0,
-    per_generation_function=None,
-    log_file=None,
-):
+def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
+                   stats=None, halloffame=None, verbose=0,
+                   per_generation_function=None, log_file=None):
     """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
     :param population: A list of individuals.
     :param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution
@@ -244,92 +232,103 @@ def eaMuPlusLambda(
     variation.
     """
     logbook = tools.Logbook()
-    logbook.header = ["gen", "nevals"] + (stats.fields if stats else [])
+    logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
 
     # Initialize statistics dict for the individuals in the population, to keep track of mutation/crossover operations and predecessor relations
     for ind in population:
         initialize_stats_dict(ind)
 
-    print("\n====\nInitial Population...")
     population[:] = toolbox.evaluate(population)
-    
     record = stats.compile(population) if stats is not None else {}
     logbook.record(gen=0, nevals=len(population), **record)
 
     # Begin the generational process
     for gen in range(1, ngen + 1):
-        print(f"\n=======================================================\ngen: {gen}")
-        # Vary the population
-        offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
+        try:
 
+            # Vary the population
+            offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
+            [offspring.append(hof) for hof in halloffame if hof not in offspring]
+        except Exception as e:
+            print(f"Variation Error {e}")
         # Update generation statistic for all individuals which have invalid 'generation' stats
         # This hold for individuals that have been altered in the varOr function
-        for ind in offspring:
-            if ind.statistics["generation"] == "INVALID":
-                ind.statistics["generation"] = gen
-
-        # Evaluate the individuals with an invalid fitness
-        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-
-        print("\n====\nEvaluating...")
-        offspring = toolbox.evaluate(offspring)
+        try:
+            for ind in offspring:
+                if ind.statistics['generation'] == 'INVALID':
+                    ind.statistics['generation'] = gen
+        except:
+            print(f"Erro verificacao {e}")
         
         try:
-            # Select the next generation population
-            print("\n====\nNext Gen Population...")
-            population[:] = toolbox.select(population + offspring, mu)
-            [print(individual) for individual in population]
+            for ind in offspring:
+                del ind.fitness.values
         except Exception as e:
-            print(e)
-        # pbar process
-        [print(f"\nHOF: {hof}") for hof in halloffame.keys]
-        high_score = max(
-                    halloffame.keys[x].wvalues[1] for x in range(len(halloffame.keys))
-                )
+            print(f"Erro {e}")
+
+        try:
+            # Evaluate the individuals with an invalid fitness
+            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+        except Exception as e:
+            print(f"Evaluation {e}")
         
-        print("\nGeneration {0} - Current "
-            "best internal CV score: {1}".format(gen, high_score),
-            file=log_file,
-            )
+        try:
+            offspring = toolbox.evaluate(offspring)
+        except Exception as e:
+            print(f"Error Evaluation")
+        # Select the next generation population
+        try:
+            population[:] = toolbox.select(population + offspring, mu)
+        except Exception as e:
+            print(f"Selection Error {e}")
+            # [print(f"Population:{ind}") for ind in population]
+            # [print(f"Offspring:{ind}") for ind in offspring]
+            # print(f"Mu:{mu}")
         
+        # [print(f"\n>>> Current HOF GP: \n{hof}") for hof in halloffame]
+        
+        # print("\n======================================================================================================================\n")
+
+
         if not pbar.disable:
             # Print only the best individual fitness
             if verbose == 2:
-                high_score = max(
-                    halloffame.keys[x].wvalues[1] for x in range(len(halloffame.keys))
-                )
-                pbar.write(
-                    "\nGeneration {0} - Current "
-                    "best internal CV score: {1}".format(gen, high_score),
-                    file=log_file,
-                )
+                try:
+                    high_score = max(halloffame.keys[x] \
+                        for x in range(len(halloffame.keys)))
+                    pbar.write('\nGeneration {0} - '
+                                'Best surrogate score: {1} Complexity: {2} - {3}'.format(gen,
+                                                            high_score.wvalues[1], high_score.wvalues[0], halloffame[0]),
 
+                                file=log_file)
+                except Exception as e:
+                    print(f"HOF error {e}")    
             # Print the entire Pareto front
             elif verbose == 3:
-                pbar.write(
-                    "\nGeneration {} - " "Current Pareto front scores:".format(gen),
-                    file=log_file,
-                )
-                for pipeline, pipeline_scores in zip(
-                    halloffame.items, reversed(halloffame.keys)
-                ):
-                    pbar.write(
-                        "\n{}\t{}\t{}".format(
+                pbar.write('\nGeneration {} - '
+                            'Current Pareto front scores:'.format(gen),
+                            file=log_file)
+                for pipeline, pipeline_scores in zip(halloffame.items, reversed(halloffame.keys)):
+                    pbar.write('\n{}\t{}\t{}'.format(
                             int(pipeline_scores.wvalues[0]),
                             pipeline_scores.wvalues[1],
-                            pipeline,
+                            pipeline
                         ),
-                        file=log_file,
+                        file=log_file
                     )
-
-        # after each population save a periodic pipeline
-        if per_generation_function is not None:
-            per_generation_function(gen)
-
-        # Update the statistics with the new population
-        record = stats.compile(population) if stats is not None else {}
-        logbook.record(gen=gen, nevals=len(invalid_ind), **record)
-
+        try:
+            # after each population save a periodic pipeline
+            if per_generation_function is not None:
+                per_generation_function(gen)
+        except Exception as e:
+            print(f"Checkpoint error {e}")
+        
+        try:
+            # Update the statistics with the new population
+            record = stats.compile(population) if stats is not None else {}
+            logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+        except Exception as e:
+            print(f"Error Longbook {e}")
     return population, logbook
 
 
@@ -433,113 +432,6 @@ def mutNodeReplacement(individual, pset):
 
     return (individual,)
 
-
-@threading_timeoutable(default="Timeout")
-def _wrapped_cross_val_score(
-    sklearn_pipeline,
-    features,
-    target,
-    cv,
-    scoring_function,
-    sample_weight=None,
-    groups=None,
-    use_dask=False,
-):
-    """Fit estimator and compute scores for a given dataset split.
-
-    Parameters
-    ----------
-    sklearn_pipeline : pipeline object implementing 'fit'
-        The object to use to fit the data.
-    features : array-like of shape at least 2D
-        The data to fit.
-    target : array-like, optional, default: None
-        The target variable to try to predict in the case of
-        supervised learning.
-    cv: cross-validation generator
-        Object to be used as a cross-validation generator.
-    scoring_function : callable
-        A scorer callable object / function with signature
-        ``scorer(estimator, X, y)``.
-    sample_weight : array-like, optional
-        List of sample weights to balance (or un-balanace) the dataset target as needed
-    groups: array-like {n_samples, }, optional
-        Group labels for the samples used while splitting the dataset into train/test set
-    use_dask : bool, default False
-        Whether to use dask
-    """
-    sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
-
-    features, target, groups = indexable(features, target, groups)
-
-    cv_iter = list(cv.split(features, target, groups))
-    scorer = check_scoring(sklearn_pipeline, scoring=scoring_function)
-
-    if use_dask:
-        try:
-            import dask_ml.model_selection  # noqa
-            import dask  # noqa
-            from dask.delayed import Delayed
-        except Exception as e:
-            msg = "'use_dask' requires the optional dask and dask-ml depedencies.\n{}".format(
-                e
-            )
-            raise ImportError(msg)
-
-        dsk, keys, n_splits = dask_ml.model_selection._search.build_graph(
-            estimator=sklearn_pipeline,
-            cv=cv,
-            scorer=scorer,
-            candidate_params=[{}],
-            X=features,
-            y=target,
-            groups=groups,
-            fit_params=sample_weight_dict,
-            refit=False,
-            error_score=float("-inf"),
-        )
-
-        cv_results = Delayed(keys[0], dsk)
-        scores = [cv_results["split{}_test_score".format(i)] for i in range(n_splits)]
-        CV_score = dask.delayed(np.array)(scores)[:, 0]
-        return dask.delayed(np.nanmean)(CV_score)
-    else:
-        try:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                scores = [
-                    _fit_and_score(
-                        estimator=clone(sklearn_pipeline),
-                        X=features,
-                        y=target,
-                        scorer=scorer,
-                        train=train,
-                        test=test,
-                        verbose=0,
-                        parameters=None,
-                        error_score="raise",
-                        fit_params=sample_weight_dict,
-                    )
-                    for train, test in cv_iter
-                ]
-                if isinstance(scores[0], list):  # scikit-learn <= 0.23.2
-                    CV_score = np.array(scores)[:, 0]
-                elif isinstance(scores[0], dict):  # scikit-learn >= 0.24
-                    from sklearn.model_selection._validation import (
-                        _aggregate_score_dicts,
-                    )
-
-                    CV_score = _aggregate_score_dicts(scores)["test_scores"]
-                else:
-                    raise ValueError("Incorrect output format from _fit_and_score!")
-                CV_score_mean = np.nanmean(CV_score)
-            return CV_score_mean
-        except TimeoutException:
-            return "Timeout"
-        except Exception as e:
-            return -float("inf")
-
-
 # @threading_timeoutable(default="Timeout")
 def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask=False):
     """Fit estimator and compute scores for a given dataset split.
@@ -579,16 +471,16 @@ def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask
             temp_features,
             labels,
         )
+
         score = round(xgb_reg(meta_features=meta_features, sil=silhouete_score, dbs=daviesbouldin_score), 4)
-        print(f"\n K: {len(set(labels))} Surrogate Score: {score} Sil: {silhouete_score} Dbs: {daviesbouldin_score} Pipe: {str(sklearn_pipeline)}\n")
-        
+        # print(f"\n K: {len(set(labels))} Surrogate Score: {score} Sil: {silhouete_score} Dbs: {daviesbouldin_score} Pipe: {str(sklearn_pipeline)}\n")
         return score
 
     except TimeoutException:
         print(f"ERRO Timeout: {e} Pipe: {str(sklearn_pipeline)}")
         return "Timeout"
     except Exception as e:
-        print(f"ERRO: {e} Pipe: {str(sklearn_pipeline)}")
+        # print(f"ERRO: {e} Pipe: {str(sklearn_pipeline)}")
         return float("inf")
 
 
