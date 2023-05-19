@@ -74,7 +74,7 @@ def update_run(run, status):
 
 while 1:
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIwODNjNDRiNS02MDM4LTQ2NGEtYWQwMC00OGRhYjcwODc0ZDIifQ=="
-    project_name = "MaleLab/Tpot4ClusteringValidation"
+    project_name = "MaleLab/TpotSv4"
     run_config = get_run_config()
     if not run_config:
         print("\n\n0 Active runs --- bye")
