@@ -43,7 +43,7 @@ def get_run_config():
     find_one_url = "https://eu-central-1.aws.data.mongodb-api.com/app/data-vhbni/endpoint/data/v1/action/findOne"
     payload = json.dumps(
         {
-            "collection": "validation",
+            "collection": "Sv4",
             "database": "tpot",
             "dataSource": "Malelab",
             "filter": {"status": "active"},
@@ -59,7 +59,7 @@ def update_run(run, status):
     update_one_url = "https://eu-central-1.aws.data.mongodb-api.com/app/data-vhbni/endpoint/data/v1/action/updateOne"
     payload = json.dumps(
         {
-            "collection": "validation",
+            "collection": "Sv4",
             "database": "tpot",
             "dataSource": "Malelab",
             "filter": {
