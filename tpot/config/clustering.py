@@ -50,12 +50,12 @@ clustering_config_dict = {
         'leaf_size': [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
     },
 
-    # 'sklearn.cluster.KMeans': {
-    #     'n_clusters': range(1, 105),
-    #     'init': ['k-means++', 'random'],
-    #     'algorithm': ['lloyd', 'elkan'],
-    #     'max_iter': np.arange(100, 600, 100)
-    # },
+    'sklearn.cluster.KMeans': {
+        'n_clusters': range(1, 23),
+        'init': ['k-means++', 'random'],
+        'algorithm': ['lloyd', 'elkan'],
+        'max_iter': np.arange(100, 600, 100)
+    },
 
     # 'sklearn.cluster.BisectingKMeans': {
     #     'n_clusters': range(1, 105),
@@ -66,7 +66,7 @@ clustering_config_dict = {
     # },
 
     'sklearn.cluster.MiniBatchKMeans': {
-        'n_clusters': range(2, 105),
+        'n_clusters': range(2, 23),
         'init': ['k-means++', 'random'],
         'max_iter': np.arange(100, 600, 100),
     },
@@ -85,7 +85,7 @@ clustering_config_dict = {
     # },
 
     'sklearn.cluster.SpectralClustering': {
-        'n_clusters': range(2, 105),
+        'n_clusters': range(2, 23),
         'eigen_solver': ['arpack', 'lobpcg', 'amg'],
         'affinity': ['nearest_neighbors', 'rbf', 'precomputed', 'precomputed_nearest_neighbors'],
     },
