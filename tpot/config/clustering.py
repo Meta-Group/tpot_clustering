@@ -51,7 +51,7 @@ clustering_config_dict = {
     },
 
     'sklearn.cluster.KMeans': {
-        'n_clusters': range(1, 23),
+        'n_clusters': range(2, 23),
         'init': ['k-means++', 'random'],
         'algorithm': ['lloyd', 'elkan'],
         'max_iter': np.arange(100, 600, 100)
