@@ -32,7 +32,7 @@ clustering_config_dict = {
     # Clusterers
     
     'sklearn.cluster.AgglomerativeClustering': {
-        'n_clusters': range(2, 105),
+        'n_clusters': range(2, 23),
         'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
         'linkage': ['ward', 'complete', 'average', 'single'],
     },
@@ -45,7 +45,7 @@ clustering_config_dict = {
 
     'sklearn.cluster.DBSCAN': {
         'eps': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'min_samples': [1, 3, 5, 10, 25, 50],
+        'min_samples': [10, 25, 50],
         'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
         'leaf_size': [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
     },
