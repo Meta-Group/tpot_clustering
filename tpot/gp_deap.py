@@ -471,16 +471,17 @@ def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask
             temp_features,
             labels,
         )
-
-        score = round(xgb_reg(meta_features=meta_features, sil=silhouete_score, dbs=daviesbouldin_score), 4)
+        
+        score = round(xgb_reg(meta_features, silhouete_score, daviesbouldin_score, len(set(labels))), 4)
         # print(f"\n K: {len(set(labels))} Surrogate Score: {score} Sil: {silhouete_score} Dbs: {daviesbouldin_score} Pipe: {str(sklearn_pipeline)}\n")
+        
         return score
 
     except TimeoutException:
         print(f"ERRO Timeout: {e} Pipe: {str(sklearn_pipeline)}")
         return "Timeout"
     except Exception as e:
-        # print(f"ERRO: {e} Pipe: {str(sklearn_pipeline)}")
+        print(f"ERRO: {e} Pipe: {str(sklearn_pipeline)}")
         return float("inf")
 
 

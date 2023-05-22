@@ -25,8 +25,7 @@ def extract_metafeatures(dataset):
         'range.sd', 'sd.mean', 'sd.sd', 'skewness.mean', 'skewness.sd',
         'sparsity.mean', 'sparsity.sd', 't2', 't3', 't4', 't_mean.mean',
         't_mean.sd', 'two_itemset.mean', 'two_itemset.sd', 'var.mean', 'var.sd',
-        'wg_dist.mean', 'wg_dist.sd', 'instances', 'features', 'sil', 'dbs',
-        'cluster_diff']
+        'wg_dist.mean', 'wg_dist.sd', 'instances', 'features']
 
     _meta_features = [value for key, value in zip(ft[0], ft[1]) if key in features]
     _meta_features.extend([n_instances, n_features])
@@ -105,6 +104,7 @@ while 1:
             n_jobs=1,
             # early_stop=int(gen*0.2)
         )
+        
         clusterer.fit(dataset, meta_features=_meta_features)
 
         pipeline, scores, clusters, labels, surrogate_score, gen_stats = clusterer.get_run_stats()
