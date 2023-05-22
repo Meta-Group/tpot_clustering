@@ -33,8 +33,10 @@ clustering_config_dict = {
     
     'sklearn.cluster.AgglomerativeClustering': {
         'n_clusters': range(2, 23),
-        'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
-        'linkage': ['ward', 'complete', 'average', 'single'],
+        #'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
+        'metric': ['euclidean'],
+        #'linkage': ['ward', 'complete', 'average', 'single'],
+        'linkage': ['ward']
     },
 
     # 'sklearn.cluster.Birch': {
@@ -46,15 +48,17 @@ clustering_config_dict = {
     'sklearn.cluster.DBSCAN': {
         'eps': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
         'min_samples': [10, 25, 50],
-        'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
+        #'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
+        'metric': ['euclidean',],
         'leaf_size': [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
     },
 
     'sklearn.cluster.KMeans': {
         'n_clusters': range(2, 23),
-        'init': ['k-means++', 'random'],
-        'algorithm': ['lloyd', 'elkan'],
-        'max_iter': np.arange(100, 600, 100)
+        #'init': ['k-means++', 'random'],
+        'init': ['k-means++', 'auto'],
+        #'algorithm': ['lloyd', 'elkan'],
+        #'max_iter': np.arange(100, 600, 100)
     },
 
     # 'sklearn.cluster.BisectingKMeans': {
@@ -67,8 +71,9 @@ clustering_config_dict = {
 
     'sklearn.cluster.MiniBatchKMeans': {
         'n_clusters': range(2, 23),
-        'init': ['k-means++', 'random'],
-        'max_iter': np.arange(100, 600, 100),
+        #'init': ['k-means++', 'random'],
+        'batch_size':[10, 25, 50]
+        #'max_iter': np.arange(100, 600, 100),
     },
 
     # 'sklearn.cluster.MeanShift': {
