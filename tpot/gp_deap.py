@@ -473,7 +473,7 @@ def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask
         )
         
         score = round(xgb_reg(meta_features, silhouete_score, daviesbouldin_score, len(set(labels))), 4)
-        score += score
+        score += 10
         print(f"\n K: {len(set(labels))} Surrogate Score (+10): {score} Sil: {silhouete_score} Dbs: {daviesbouldin_score} Pipe: {str(sklearn_pipeline)}\n")
         
         return score
