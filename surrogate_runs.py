@@ -11,24 +11,22 @@ def extract_metafeatures(dataset):
     mfe = MFE(groups="all")
     mfe.fit(X)
     ft = mfe.extract()
-    n_instances = X.shape[0]
-    n_features = X.shape[1]
-
-    features = ['attr_conc.mean', 'attr_conc.sd', 'attr_ent.mean', 'attr_ent.sd',
-        'attr_to_inst', 'cat_to_num', 'cohesiveness.mean', 'cohesiveness.sd',
-        'cor.mean', 'cov.mean', 'eigenvalues.mean', 'eigenvalues.sd',
-        'inst_to_attr', 'iq_range.mean', 'iq_range.sd', 'kurtosis.mean',
-        'kurtosis.sd', 'mad.mean', 'mad.sd', 'max.mean', 'max.sd', 'mean.mean',
-        'mean.sd', 'median.mean', 'median.sd', 'min.mean', 'min.sd', 'nr_attr',
-        'nr_bin', 'nr_cat', 'nr_cor_attr', 'nr_inst', 'nr_norm', 'nr_num',
-        'nr_outliers', 'one_itemset.mean', 'one_itemset.sd', 'range.mean',
-        'range.sd', 'sd.mean', 'sd.sd', 'skewness.mean', 'skewness.sd',
-        'sparsity.mean', 'sparsity.sd', 't2', 't3', 't4', 't_mean.mean',
-        't_mean.sd', 'two_itemset.mean', 'two_itemset.sd', 'var.mean', 'var.sd',
-        'wg_dist.mean', 'wg_dist.sd', 'instances', 'features']
+    features = ['attr_conc.mean', 'attr_conc.sd', 'attr_ent.mean',
+                'attr_ent.sd', 'attr_to_inst', 'cat_to_num', 'cohesiveness.mean',
+                'cohesiveness.sd', 'cor.mean', 'cor.sd', 'cov.mean', 'cov.sd',
+                'eigenvalues.mean', 'eigenvalues.sd', 'g_mean.mean', 'g_mean.sd',
+                'h_mean.mean', 'h_mean.sd', 'inst_to_attr', 'iq_range.mean',
+                'iq_range.sd', 'kurtosis.mean', 'kurtosis.sd', 'mad.mean', 'mad.sd',
+                'max.mean', 'max.sd', 'mean.mean', 'mean.sd', 'median.mean',
+                'median.sd', 'min.mean', 'min.sd', 'nr_attr', 'nr_bin', 'nr_cat',
+                'nr_cor_attr', 'nr_inst', 'nr_norm', 'nr_num', 'nr_outliers',
+                'num_to_cat', 'one_itemset.mean', 'one_itemset.sd', 'range.mean',
+                'range.sd', 'sd.mean', 'sd.sd', 'skewness.mean', 'skewness.sd',
+                'sparsity.mean', 'sparsity.sd', 't2', 't3', 't4', 't_mean.mean',
+                't_mean.sd', 'two_itemset.mean', 'two_itemset.sd', 'var.mean', 'var.sd',
+                'wg_dist.mean', 'wg_dist.sd']
 
     _meta_features = [value for key, value in zip(ft[0], ft[1]) if key in features]
-    _meta_features.extend([n_instances, n_features])
     return _meta_features
 
 
@@ -80,6 +78,7 @@ while 1:
         quit()
 
     dataset_name = run_config["dataset"]
+    #dataset_name = "tetra.csv"
     gen = run_config["gen"]
     pop = run_config["pop"]
     run_id = run_config["_id"]
