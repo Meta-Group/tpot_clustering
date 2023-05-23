@@ -1963,12 +1963,12 @@ class TPOTBase(BaseEstimator):
         operator_count: int
             How many operators in a pipeline
         """
-        # operator_count = 0
-        # for node in individual:
-        #     if type(node) is deap.gp.Primitive and node.name != "CombineDFs":
-        #         operator_count += 1
-        # return operator_count
-        return 1
+        operator_count = 0
+        for node in individual:
+            if type(node) is deap.gp.Primitive and node.name != "CombineDFs":
+                operator_count += 1
+        return operator_count
+        #return 1
 
     def _update_val(self, val, result_score_list):
         """Update values in the list of result scores and self._pbar during pipeline evaluation.
