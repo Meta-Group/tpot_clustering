@@ -2,7 +2,6 @@ import tpot
 from tpot.tpot import TPOTClustering
 import pandas as pd
 import neptune.new as neptune
-#import neptune as neptune
 import requests
 import json
 import joblib
@@ -49,7 +48,7 @@ def get_run_config():
     find_one_url = "https://eu-central-1.aws.data.mongodb-api.com/app/data-vhbni/endpoint/data/v1/action/findOne"
     payload = json.dumps(
         {
-            "collection": "Sv5",
+            "collection": "Sv4",
             "database": "tpot",
             "dataSource": "Malelab",
             "filter": {"status": "active"},
@@ -65,7 +64,7 @@ def update_run(run, status):
     update_one_url = "https://eu-central-1.aws.data.mongodb-api.com/app/data-vhbni/endpoint/data/v1/action/updateOne"
     payload = json.dumps(
         {
-            "collection": "Sv5",
+            "collection": "Sv4",
             "database": "tpot",
             "dataSource": "Malelab",
             "filter": {
