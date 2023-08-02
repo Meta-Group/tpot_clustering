@@ -2,8 +2,10 @@ import tpot
 from tpot.tpot import TPOTClustering
 import pandas as pd
 import neptune.new as neptune
+#import neptune as neptune
 import requests
 import json
+import joblib
 from pymfe.mfe import MFE
 
 def extract_metafeatures(dataset):
@@ -12,19 +14,26 @@ def extract_metafeatures(dataset):
     mfe.fit(X)
     ft = mfe.extract()
     features = ['attr_conc.mean', 'attr_conc.sd', 'attr_ent.mean',
-                'attr_ent.sd', 'attr_to_inst', 'cat_to_num', 'cohesiveness.mean',
-                'cohesiveness.sd', 'cor.mean', 'cor.sd', 'cov.mean', 'cov.sd',
-                'eigenvalues.mean', 'eigenvalues.sd', 'g_mean.mean', 'g_mean.sd',
-                'h_mean.mean', 'h_mean.sd', 'inst_to_attr', 'iq_range.mean',
-                'iq_range.sd', 'kurtosis.mean', 'kurtosis.sd', 'mad.mean', 'mad.sd',
-                'max.mean', 'max.sd', 'mean.mean', 'mean.sd', 'median.mean',
-                'median.sd', 'min.mean', 'min.sd', 'nr_attr', 'nr_bin', 'nr_cat',
-                'nr_cor_attr', 'nr_inst', 'nr_norm', 'nr_num', 'nr_outliers',
-                'num_to_cat', 'one_itemset.mean', 'one_itemset.sd', 'range.mean',
-                'range.sd', 'sd.mean', 'sd.sd', 'skewness.mean', 'skewness.sd',
-                'sparsity.mean', 'sparsity.sd', 't2', 't3', 't4', 't_mean.mean',
-                't_mean.sd', 'two_itemset.mean', 'two_itemset.sd', 'var.mean', 'var.sd',
-                'wg_dist.mean', 'wg_dist.sd']
+                       'attr_ent.sd', 'attr_to_inst', 'cohesiveness.mean', 'cohesiveness.sd',
+                       # 'cor.mean',#'cor.sd',
+                       'cov.mean',  # 'cov.sd',
+                       'eigenvalues.mean', 'eigenvalues.sd',
+                       'inst_to_attr', 'iq_range.mean', 'iq_range.sd',
+                       # 'kurtosis.mean','kurtosis.sd',
+                       'mad.mean', 'mad.sd',
+                       # 'max.mean','max.sd','mean.mean','mean.sd',
+                       'median.mean',
+                       'median.sd',  # 'min.mean','min.sd',
+                       'nr_attr', 'nr_cor_attr', 'nr_inst', 'one_itemset.mean',
+                       'one_itemset.sd',
+                       # 'range.mean','range.sd',
+                       'sd.mean', 'sd.sd'
+                       # ,'skewness.mean', 'skewness.sd'
+                        , 'sparsity.mean', 'sparsity.sd', 't2', 't3', 't4', 't_mean.mean',
+                       't_mean.sd', 'two_itemset.mean', 'two_itemset.sd', 'var.mean', 'var.sd',
+                       'wg_dist.mean', 'wg_dist.sd',
+                       'sil', 'dbs', 'clusters', 'cluster_diff'
+                       ]
 
     _meta_features = [value for key, value in zip(ft[0], ft[1]) if key in features]
     return _meta_features
@@ -40,7 +49,7 @@ def get_run_config():
     find_one_url = "https://eu-central-1.aws.data.mongodb-api.com/app/data-vhbni/endpoint/data/v1/action/findOne"
     payload = json.dumps(
         {
-            "collection": "Sv4",
+            "collection": "Sv5",
             "database": "tpot",
             "dataSource": "Malelab",
             "filter": {"status": "active"},
@@ -56,7 +65,7 @@ def update_run(run, status):
     update_one_url = "https://eu-central-1.aws.data.mongodb-api.com/app/data-vhbni/endpoint/data/v1/action/updateOne"
     payload = json.dumps(
         {
-            "collection": "Sv4",
+            "collection": "Sv5",
             "database": "tpot",
             "dataSource": "Malelab",
             "filter": {
@@ -71,7 +80,7 @@ def update_run(run, status):
 
 while 1:
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIwODNjNDRiNS02MDM4LTQ2NGEtYWQwMC00OGRhYjcwODc0ZDIifQ=="
-    project_name = "MaleLab/TpotSv4"
+    project_name = "MaleLab/TpotSv5"
     run_config = get_run_config()
     if not run_config:
         print("\n\n0 Active runs --- bye")

@@ -23,21 +23,17 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+from collections import defaultdict
+from inspect import isclass
+
 import numpy as np
 from deap import tools, gp
-from inspect import isclass
-from .operator_utils import set_sample_weight
-from .meta_scorer import xgb_reg
-from sklearn.utils import indexable
-from sklearn.metrics import check_scoring
-from sklearn.model_selection._validation import _fit_and_score
-
-from sklearn.base import clone
-from collections import defaultdict
-import warnings
-from stopit import threading_timeoutable, TimeoutException
 from sklearn import metrics
-from sklearn.pipeline import make_pipeline
+from stopit import TimeoutException
+
+
+import joblib
+from .meta_scorer import rf_sv5_reg
 
 
 def pick_two_individuals_eligible_for_crossover(population):
@@ -472,7 +468,7 @@ def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask
             labels,
         )
         
-        score = round(xgb_reg(meta_features, silhouete_score, daviesbouldin_score, len(set(labels))), 4)
+        score = round(rf_sv5_reg(meta_features, silhouete_score, daviesbouldin_score, len(set(labels))), 4)
         #score += 10
         print(f"\n K: {len(set(labels))} Surrogate Score: {score} Sil: {silhouete_score} Dbs: {daviesbouldin_score} Pipe: {str(sklearn_pipeline)}\n")
         
