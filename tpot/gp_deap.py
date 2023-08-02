@@ -468,7 +468,7 @@ def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask
             labels,
         )
         
-        score = round(rf_sv5_reg(meta_features, silhouete_score, daviesbouldin_score, len(set(labels))), 4)
+        score = np.round(rf_sv5_reg(meta_features, silhouete_score, daviesbouldin_score, len(set(labels))), 4)
         #score += 10
         print(f"\n K: {len(set(labels))} Surrogate Score: {score} Sil: {silhouete_score} Dbs: {daviesbouldin_score} Pipe: {str(sklearn_pipeline)}\n")
         
