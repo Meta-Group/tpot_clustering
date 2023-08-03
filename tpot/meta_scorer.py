@@ -18,17 +18,16 @@ def xgb_reg(meta_features, sil, dbs, n_clusters):
 
 
 def rf_sv5_reg(meta_features, sil, dbs, n_clusters):
-    try:
-        model = RandomForestRegressor()
-        model = joblib.load("tpot/models/RFR_Sv5_b.joblib")
-        mf = meta_features.copy()
-        mf.extend([sil, dbs, n_clusters])
-        surrogate_score = model.predict([mf])
-        return surrogate_score
-
-    except Exception as e:
-        print(f"XGB error: {e}")
-        return float('inf')
+    #try:
+    model = RandomForestRegressor()
+    model = joblib.load("tpot/models/RFR_Sv5_b.joblib", mmap_mode='r')
+    mf = meta_features.copy()
+    mf.extend([sil, dbs, n_clusters])
+    surrogate_score = model.predict([mf])[0]
+    return surrogate_score
+    #except Exception as e:
+    #    print(f"RFRegressor error: {e}")
+    #    return float('inf')
         
     
         

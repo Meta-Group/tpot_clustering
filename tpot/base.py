@@ -81,7 +81,7 @@ from .config.classifier_nn import classifier_config_nn
 from .config.classifier_cuml import classifier_config_cuml
 from .config.regressor_cuml import regressor_config_cuml
 
-from .metrics import SCORERS
+#from .metrics import SCORERS
 from .gp_types import Output_Array
 from .gp_deap import (
     eaMuPlusLambda,
@@ -1792,7 +1792,8 @@ class TPOTBase(BaseEstimator):
         for result_score, individual_str in zip(
             result_score_list, eval_individuals_str
         ):
-            if type(result_score) in [float, np.float64, np.float32]:
+
+            if type(result_score) in [np.float, np.float64, np.float32]:
                 self.evaluated_individuals_[
                     individual_str
                 ] = self._combine_individual_stats(

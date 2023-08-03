@@ -6,13 +6,25 @@ import requests
 import json
 import joblib
 from pymfe.mfe import MFE
+from sklearn.preprocessing import MinMaxScaler
+
 
 def extract_metafeatures(dataset):
     X = dataset.values
-    mfe = MFE(groups="all")
+
+    scaler = MinMaxScaler()
+    X = scaler.fit_transform(X)
+
+    features = ['attr_conc', 'attr_ent', 'attr_to_inst', 'cohesiveness', 'cor', 'cov',
+                'eigenvalues', 'inst_to_attr', 'iq_range', 'kurtosis', 'mad', 'max', 'mean', 'median', 'min',
+                'nr_attr', 'nr_cor_attr', 'nr_inst',
+                'one_itemset', 'range', 'sd', 'skewness',
+                'sparsity', 't2', 't3', 't4', 't_mean', 'two_itemset', 'var', 'wg_dist',
+                ]
+    mfe = MFE(groups="all", features=features)
     mfe.fit(X)
     ft = mfe.extract()
-    features = ['attr_conc.mean', 'attr_conc.sd', 'attr_ent.mean',
+    mfeatures = ['attr_conc.mean', 'attr_conc.sd', 'attr_ent.mean',
                        'attr_ent.sd', 'attr_to_inst', 'cohesiveness.mean', 'cohesiveness.sd',
                        # 'cor.mean',#'cor.sd',
                        'cov.mean',  # 'cov.sd',
@@ -34,7 +46,7 @@ def extract_metafeatures(dataset):
                        'sil', 'dbs', 'clusters', 'cluster_diff'
                        ]
 
-    _meta_features = [value for key, value in zip(ft[0], ft[1]) if key in features]
+    _meta_features = [value for key, value in zip(ft[0], ft[1]) if key in mfeatures]
     return _meta_features
 
 

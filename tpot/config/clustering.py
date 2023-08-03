@@ -50,13 +50,13 @@ clustering_config_dict = {
         'min_samples': [10, 25, 50],
         #'metric': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed', 'cityblock'],
         'metric': ['euclidean',],
-        'leaf_size': [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+        'leaf_size': [3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
     },
 
     'sklearn.cluster.KMeans': {
         'n_clusters': range(2, 23),
-        #'init': ['k-means++', 'random'],
-        'init': ['k-means++', 'auto'],
+        'init': ['k-means++', 'random'],
+        #'init': ['k-means++', 'auto'],
         #'algorithm': ['lloyd', 'elkan'],
         #'max_iter': np.arange(100, 600, 100)
     },
