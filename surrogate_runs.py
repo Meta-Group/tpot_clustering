@@ -8,7 +8,6 @@ import joblib
 from pymfe.mfe import MFE
 from sklearn.preprocessing import MinMaxScaler
 
-
 def extract_metafeatures(dataset):
     X = dataset.values
 
@@ -60,7 +59,7 @@ def get_run_config():
     find_one_url = "https://eu-central-1.aws.data.mongodb-api.com/app/data-vhbni/endpoint/data/v1/action/findOne"
     payload = json.dumps(
         {
-            "collection": "Sv4",
+            "collection": "Sv5",
             "database": "tpot",
             "dataSource": "Malelab",
             "filter": {"status": "active"},
@@ -76,7 +75,7 @@ def update_run(run, status):
     update_one_url = "https://eu-central-1.aws.data.mongodb-api.com/app/data-vhbni/endpoint/data/v1/action/updateOne"
     payload = json.dumps(
         {
-            "collection": "Sv4",
+            "collection": "Sv5",
             "database": "tpot",
             "dataSource": "Malelab",
             "filter": {
@@ -91,14 +90,13 @@ def update_run(run, status):
 
 while 1:
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIwODNjNDRiNS02MDM4LTQ2NGEtYWQwMC00OGRhYjcwODc0ZDIifQ=="
-    project_name = "MaleLab/TpotSv5"
+    project_name = "MaleLab/Sv5"
     run_config = get_run_config()
     if not run_config:
         print("\n\n0 Active runs --- bye")
         quit()
 
     dataset_name = run_config["dataset"]
-    #dataset_name = "tetra.csv"
     gen = run_config["gen"]
     pop = run_config["pop"]
     run_id = run_config["_id"]
