@@ -126,12 +126,13 @@ while 1:
 
         pipeline, scores, clusters, labels, surrogate_score, gen_stats = clusterer.get_run_stats()
 
-        print(f"Pipeline: {pipeline} Scores: {scores} Clusters: {clusters} Surrogate: {surrogate_score}")
+        print(f">> Pipeline: {pipeline} Scores: {scores} Clusters: {clusters} Surrogate: {surrogate_score} Labels: {labels}<<")
         run["sil"] = scores['sil']
         run["dbs"] = scores['dbs']
         run["clusters"] = clusters
         run["pipeline"] = pipeline
         run["surrogate_score"] = surrogate_score
+        run["labels"] = labels
         update_run(run_config, "finished")
 
     except Exception as e:
