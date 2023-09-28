@@ -768,7 +768,7 @@ class TPOTBase(BaseEstimator):
             target=target,
             sample_weight=sample_weight,
             groups=groups,
-            meta_features=meta_features
+            meta_features=meta_features,
         )
 
         # assign population, self._pop can only be not None if warm_start is enabled
@@ -1516,7 +1516,7 @@ class TPOTBase(BaseEstimator):
         return stats
 
     def _evaluate_individuals(
-        self, population, features, target=None, sample_weight=None, groups=None, meta_features=None
+        self, population, features, target=None, sample_weight=None, groups=None, meta_features=None, generation=None
     ):
         """Determine the fit of the provided individuals.
 
@@ -1562,6 +1562,7 @@ class TPOTBase(BaseEstimator):
                 _wrapped_surrogate_score,
                 features=features,
                 meta_features=meta_features,
+                generation=generation
         )  
 
         result_score_list = []

@@ -30,6 +30,10 @@ import numpy as np
 from deap import tools, gp
 from sklearn import metrics
 from stopit import TimeoutException
+import warnings
+
+# Ignore all warnings
+warnings.filterwarnings("ignore")
 
 
 import joblib
@@ -234,7 +238,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     for ind in population:
         initialize_stats_dict(ind)
 
-    population[:] = toolbox.evaluate(population)
+    population[:] = toolbox.evaluate(population,generation=0)
     record = stats.compile(population) if stats is not None else {}
     logbook.record(gen=0, nevals=len(population), **record)
 
@@ -269,7 +273,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
             print(f"Evaluation {e}")
         
         try:
-            offspring = toolbox.evaluate(offspring)
+            offspring = toolbox.evaluate(offspring,generation=gen)
         except Exception as e:
             print(f"Error Evaluation")
         # Select the next generation population
@@ -277,7 +281,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
             population[:] = toolbox.select(population + offspring, mu)
         except Exception as e:
             print(f"Selection Error {e}")
-            # [print(f"Population:{ind}") for ind in population]
+            
             # [print(f"Offspring:{ind}") for ind in offspring]
             # print(f"Mu:{mu}")
         
@@ -292,9 +296,9 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
                 try:
                     high_score = max(halloffame.keys[x] \
                         for x in range(len(halloffame.keys)))
-                    pbar.write('\nGeneration {0} - '
-                                'Best surrogate score: {1} Complexity: {2} - {3}'.format(gen,
-                                                            high_score.wvalues[1], high_score.wvalues[0], halloffame[0]),
+                    pbar.write('\nGen: {0} - '
+                                'Best Surrogate Score: {1} Complexity: {2} - Pipeline: {3}'.format(gen,
+                                                            high_score.wvalues[1], high_score.wvalues[0], toolbox.compile(halloffame[0])),
 
                                 file=log_file)
                 except Exception as e:
@@ -429,7 +433,7 @@ def mutNodeReplacement(individual, pset):
     return (individual,)
 
 # @threading_timeoutable(default="Timeout")
-def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask=False):
+def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask=False, generation=None):
     """Fit estimator and compute scores for a given dataset split.
 
     Parameters
@@ -469,9 +473,8 @@ def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask
         )
         
         score = np.round(rf_sv5_reg(meta_features, silhouete_score, daviesbouldin_score, len(set(labels))), 4)
-        print("score:", score)
-        #score += 10
-        print(f"\n K: {len(set(labels))} Surrogate Score: {score} Sil: {silhouete_score} Dbs: {daviesbouldin_score} Pipe: {str(sklearn_pipeline)}\n")
+        
+        print(f"\nGen: {generation} K: {len(set(labels))} Surrogate Score: {score} Sil: {silhouete_score} Dbs: {daviesbouldin_score} Pipe: {str(sklearn_pipeline)}\n")
         
         return score
 
