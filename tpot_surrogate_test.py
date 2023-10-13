@@ -2,7 +2,6 @@ import tpot
 from tpot import TPOTClustering
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.datasets import load_iris
 from pymfe.mfe import MFE
 import neptune
 
@@ -12,8 +11,11 @@ scaler = MinMaxScaler()
 normalized_data = scaler.fit_transform(dataset)
 normalized_df = pd.DataFrame(normalized_data, columns=dataset.columns)
 
+labels = pd.read_csv(f"datasets/cluster_labels/{dataset_name}.csv")
+labels = labels['y'].tolist()
+
 gen = 10
-pop = 50
+pop = 20
 
 def extract_metafeatures(dataset):
     X = dataset.values
@@ -67,8 +69,6 @@ for i in range(10):
             n_jobs=-1,
             # early_stop=int(gen*0.2)
         )
-        scaler = MinMaxScaler()
-        dataset = scaler.fit_transform(dataset)
         _meta_features = extract_metafeatures(dataset)
         run = neptune.init_run(project=project_name, api_token=api_token)
 
@@ -77,8 +77,8 @@ for i in range(10):
         run["pop"] = pop
         print(f"\n==================== TPOT CLUSTERING ==================== \n Dataset: {dataset_name} - Surrogate Function")
         
-        clusterer.fit(normalized_df, meta_features=_meta_features)
-        pipeline, scores, clusters, labels, surrogate_score, gen_stats = clusterer.get_run_stats()
+        clusterer.fit(normalized_df, meta_features=_meta_features, labels_true=labels)
+        pipeline, scores, clusters, surrogate_score = clusterer.get_run_stats()
 
         print(f"\n---------------------------------------------------------\n")
         print("Results:")
@@ -90,10 +90,10 @@ for i in range(10):
 
         run["sil"] = scores['sil']
         run["dbs"] = scores['dbs']
+        run["ari"] = scores['ari']
         run["clusters"] = clusters
         run["pipeline"] = pipeline
         run["surrogate_score"] = surrogate_score
-        run["labels"] = labels
         
     except Exception as e:
         run["error_msg"] = e

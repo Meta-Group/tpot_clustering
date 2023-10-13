@@ -29,6 +29,7 @@ from inspect import isclass
 import numpy as np
 from deap import tools, gp
 from sklearn import metrics
+
 from stopit import TimeoutException
 import warnings
 
@@ -433,7 +434,7 @@ def mutNodeReplacement(individual, pset):
     return (individual,)
 
 # @threading_timeoutable(default="Timeout")
-def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask=False, generation=None):
+def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask=False, generation=None, labels_true=None):
     """Fit estimator and compute scores for a given dataset split.
 
     Parameters
@@ -455,26 +456,35 @@ def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask
 
     try:
         estimator = sklearn_pipeline.fit(features)
-        labels = estimator[-1].labels_
+        labels_pred = estimator[-1].labels_
         temp_features = features
-
+        
         for operator in sklearn_pipeline:
             if getattr(operator, "_estimator_type", None) != "clusterer":
                 temp_features = operator.fit_transform(temp_features)
 
         silhouete_score = metrics.silhouette_score(
             temp_features,
-            labels,
+            labels_pred,
         )
-
+    
         daviesbouldin_score = metrics.davies_bouldin_score(
             temp_features,
-            labels,
+            labels_pred,
         )
         
-        score = np.round(rf_sv5_reg(meta_features, silhouete_score, daviesbouldin_score, len(set(labels))), 4)
         
-        print(f"\nGen: {generation} K: {len(set(labels))} Surrogate Score: {score} Sil: {silhouete_score} Dbs: {daviesbouldin_score} Pipe: {str(sklearn_pipeline)}\n")
+        ari_score = metrics.adjusted_rand_score(
+            labels_pred=labels_pred, 
+            labels_true=labels_true
+        )
+
+        score = np.round(rf_sv5_reg(meta_features, silhouete_score, daviesbouldin_score, len(set(labels_pred))), 4)
+        silhouete_score = np.round(silhouete_score, 4)
+        daviesbouldin_score = np.round(daviesbouldin_score, 4)
+        ari_score = np.round(ari_score, 4)
+
+        print(f"\nGen: {generation} K: {len(set(labels_pred))} Surrogate Score: {score} Sil: {silhouete_score} Dbs: {daviesbouldin_score} ARI:{ari_score} Pipe: {str(sklearn_pipeline)} \n")
         
         return score
 
@@ -486,24 +496,31 @@ def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask
         return float("inf")
 
 
-def _get_clustering_metrics(temp_features, labels):
+def _get_clustering_metrics(temp_features, labels_pred, labels_true):
     calculated = {}
 
     try:
         sil = metrics.silhouette_score(
             temp_features,
-            labels,
+            labels_pred,
         )
 
         dbs = metrics.davies_bouldin_score(
             temp_features,
-            labels,
+            labels_pred,
+        )
+
+        ari = metrics.adjusted_rand_score(
+            labels_pred=labels_pred, 
+            labels_true=labels_true
         )
 
         calculated["sil"] = round(sil, 4)
         calculated["dbs"] = round(dbs, 4)
+        calculated["ari"] = round(ari, 4)
     except Exception as e:
         calculated["sil"] = float("inf")
         calculated["dbs"] = float("inf")
+        calculated["ari"] = float("inf")
 
     return calculated

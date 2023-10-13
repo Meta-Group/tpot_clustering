@@ -593,7 +593,6 @@ class TPOTBase(BaseEstimator):
             self._scores = None
             self._n_clusters = None
             self._labels = None
-            self._gen_stats = None
             self._surrogatescore = None
             self._pop = []
             self._pareto_front = None
@@ -695,7 +694,7 @@ class TPOTBase(BaseEstimator):
         """
         raise ValueError("Use TPOTClassifier or TPOTRegressor pr TPOTClusterer")
 
-    def fit(self, features, target=None, sample_weight=None, groups=None, meta_features=None):
+    def fit(self, features, target=None, sample_weight=None, groups=None, meta_features=None, labels_true=None):
         """Fit an optimized machine learning pipeline.
 
         Uses genetic programming to optimize a machine learning pipeline that
@@ -769,6 +768,7 @@ class TPOTBase(BaseEstimator):
             sample_weight=sample_weight,
             groups=groups,
             meta_features=meta_features,
+            labels_true=labels_true
         )
 
         # assign population, self._pop can only be not None if warm_start is enabled
@@ -863,7 +863,7 @@ class TPOTBase(BaseEstimator):
                         self._pbar.close()
                     
                     self._update_top_pipeline()
-                    self._summary_of_best_pipeline(features, meta_features)
+                    self._summary_of_best_pipeline(features, meta_features, labels_true)
                     # Delete the temporary cache before exiting
                     self._cleanup_memory()
                     break
@@ -973,7 +973,7 @@ class TPOTBase(BaseEstimator):
                 "A pipeline has not yet been optimized. Please call fit() first."
             )
 
-    def _summary_of_best_pipeline(self, features, meta_features):
+    def _summary_of_best_pipeline(self, features, meta_features, labels_true):
         """Print out best pipeline at the end of optimization process.
 
         Parameters
@@ -998,7 +998,7 @@ class TPOTBase(BaseEstimator):
         else:
             self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
             self.fitted_pipeline_.fit(features)
-            labels = self.fitted_pipeline_.fit(features)[-1].labels_
+            labels_pred = self.fitted_pipeline_.fit(features)[-1].labels_
 
             optimized_pipeline_str = self.clean_pipeline_string(
                 self._optimized_pipeline
@@ -1015,22 +1015,24 @@ class TPOTBase(BaseEstimator):
                 if getattr(operator, "_estimator_type", None) != "clusterer":
                     temp_features = operator.fit_transform(temp_features)
             
-            self._surrogatescore = _wrapped_surrogate_score(sklearn_pipeline= self.fitted_pipeline_, features=features, meta_features=meta_features)
+            self._surrogatescore = _wrapped_surrogate_score(sklearn_pipeline= self.fitted_pipeline_, features=features, meta_features=meta_features, labels_true=labels_true)
 
-            val =  _get_clustering_metrics(temp_features=temp_features, labels=labels,)
+            val =  _get_clustering_metrics(temp_features=temp_features, labels_pred=labels_pred, labels_true=labels_true)
 
             sil = '-'
             dbs = '-'
-            
+            ari = '-'
+
             if "sil" in val:
                 sil = val["sil"]
             if "dbs" in val:
                 dbs = val["dbs"]
+            if "ari" in val:
+                ari = val["ari"]
                     
-            self._scores = {"sil": sil, "dbs": dbs}
+            self._scores = {"sil": sil, "dbs": dbs, "ari":ari}
             self._best_overall_pipeline = optimized_pipeline_str
-            self._n_clusters = len(set(labels))
-            self._labels = labels
+            self._n_clusters = len(set(labels_pred))
             # Store and fit the entire Pareto front as fitted models for convenience
             self.pareto_front_fitted_pipelines_ = {}
 
@@ -1331,7 +1333,7 @@ class TPOTBase(BaseEstimator):
             return to_write
         
     def get_run_stats(self):
-        return self._best_overall_pipeline, self._scores, self._n_clusters, self._labels, self._surrogatescore, self._gen_stats
+        return self._best_overall_pipeline, self._scores, self._n_clusters, self._surrogatescore
 
     def _impute_values(self, features):
         """Impute missing values in a feature set.
@@ -1516,7 +1518,7 @@ class TPOTBase(BaseEstimator):
         return stats
 
     def _evaluate_individuals(
-        self, population, features, target=None, sample_weight=None, groups=None, meta_features=None, generation=None
+        self, population, features, target=None, sample_weight=None, groups=None, meta_features=None, generation=None, labels_true=None
     ):
         """Determine the fit of the provided individuals.
 
@@ -1562,7 +1564,8 @@ class TPOTBase(BaseEstimator):
                 _wrapped_surrogate_score,
                 features=features,
                 meta_features=meta_features,
-                generation=generation
+                generation=generation,
+                labels_true=labels_true
         )  
 
         result_score_list = []
