@@ -125,7 +125,7 @@ while 1:
             population_size=pop,
             verbosity=2,
             config_dict=tpot.config.clustering_config_dict,
-            n_jobs=-1,
+            n_jobs=1,
             # early_stop=int(gen*0.2)
         )
         
