@@ -434,7 +434,7 @@ def mutNodeReplacement(individual, pset):
     return (individual,)
 
 # @threading_timeoutable(default="Timeout")
-def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask=False, generation=None, labels_true=None):
+def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask=False, generation=None, labels_true=None, model_name="RFR_Sv5_b"):
     """Fit estimator and compute scores for a given dataset split.
 
     Parameters
@@ -479,11 +479,12 @@ def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask
             labels_true=labels_true
         )
 
-        score = np.round(rf_sv5_reg(meta_features, silhouete_score, daviesbouldin_score, len(set(labels_pred))), 4)
+        score = np.round(rf_sv5_reg(model_name, meta_features, silhouete_score, daviesbouldin_score, len(set(labels_pred))), 4)
         silhouete_score = np.round(silhouete_score, 4)
         daviesbouldin_score = np.round(daviesbouldin_score, 4)
         ari_score = np.round(ari_score, 4)
-
+        
+        # insert neptune run here
         print(f"\nGen: {generation} K: {len(set(labels_pred))} Surrogate Score: {score} Sil: {silhouete_score} Dbs: {daviesbouldin_score} ARI:{ari_score} Pipe: {str(sklearn_pipeline)} \n")
         
         return score
@@ -492,7 +493,7 @@ def _wrapped_surrogate_score(sklearn_pipeline, features, meta_features, use_dask
         print(f"ERRO Timeout: {e} Pipe: {str(sklearn_pipeline)}")
         return "Timeout"
     except Exception as e:
-        print(f"ERRO: {e} Pipe: {str(sklearn_pipeline)}")
+        # print(f"ERRO: {e} Pipe: {str(sklearn_pipeline)}")
         return float("inf")
 
 

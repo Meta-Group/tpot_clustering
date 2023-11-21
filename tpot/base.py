@@ -81,7 +81,7 @@ from .config.classifier_nn import classifier_config_nn
 from .config.classifier_cuml import classifier_config_cuml
 from .config.regressor_cuml import regressor_config_cuml
 
-#from .metrics import SCORERS
+# from .metrics import SCORERS
 from .gp_types import Output_Array
 from .gp_deap import (
     eaMuPlusLambda,
@@ -339,12 +339,12 @@ class TPOTBase(BaseEstimator):
     def _setup_scoring_function(self, scoring):
         if scoring:
             if isinstance(scoring, str):
-                if scoring not in SCORERS:
-                    raise ValueError(
-                        "The scoring function {} is not available. Please "
-                        "choose a valid scoring function from the TPOT "
-                        "documentation.".format(scoring)
-                    )
+                # if scoring not in SCORERS:
+                #     raise ValueError(
+                #         "The scoring function {} is not available. Please "
+                #         "choose a valid scoring function from the TPOT "
+                #         "documentation.".format(scoring)
+                #     )
                 self.scoring_function = scoring
             elif callable(scoring):
                 # Heuristic to ensure user has not passed a metric
@@ -694,7 +694,7 @@ class TPOTBase(BaseEstimator):
         """
         raise ValueError("Use TPOTClassifier or TPOTRegressor pr TPOTClusterer")
 
-    def fit(self, features, target=None, sample_weight=None, groups=None, meta_features=None, labels_true=None):
+    def fit(self, features, target=None, sample_weight=None, groups=None, meta_features=None, labels_true=None, model_name="RFR_Sv5_b"):
         """Fit an optimized machine learning pipeline.
 
         Uses genetic programming to optimize a machine learning pipeline that
@@ -760,6 +760,7 @@ class TPOTBase(BaseEstimator):
             np.random.seed(self.random_state)
         self._start_datetime = datetime.now()
         self._last_pipeline_write = self._start_datetime
+        self.model_name = model_name
         self._toolbox.register(
             "evaluate",
             self._evaluate_individuals,
@@ -1015,7 +1016,7 @@ class TPOTBase(BaseEstimator):
                 if getattr(operator, "_estimator_type", None) != "clusterer":
                     temp_features = operator.fit_transform(temp_features)
             
-            self._surrogatescore = _wrapped_surrogate_score(sklearn_pipeline= self.fitted_pipeline_, features=features, meta_features=meta_features, labels_true=labels_true)
+            self._surrogatescore = _wrapped_surrogate_score(sklearn_pipeline= self.fitted_pipeline_, features=features, meta_features=meta_features, labels_true=labels_true, model_name=self.model_name)
 
             val =  _get_clustering_metrics(temp_features=temp_features, labels_pred=labels_pred, labels_true=labels_true)
 
@@ -1123,7 +1124,8 @@ class TPOTBase(BaseEstimator):
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface
         if isinstance(self.scoring_function, str):
-            scorer = SCORERS[self.scoring_function]
+            # scorer = SCORERS[self.scoring_function]
+            pass
         elif callable(self.scoring_function):
             scorer = self.scoring_function
         else:
@@ -1565,7 +1567,8 @@ class TPOTBase(BaseEstimator):
                 features=features,
                 meta_features=meta_features,
                 generation=generation,
-                labels_true=labels_true
+                labels_true=labels_true,
+                model_name=self.model_name
         )  
 
         result_score_list = []
@@ -1797,7 +1800,7 @@ class TPOTBase(BaseEstimator):
             result_score_list, eval_individuals_str
         ):
 
-            if type(result_score) in [np.float, np.float64, np.float32]:
+            if type(result_score) in [float, np.float64, np.float32]:
                 self.evaluated_individuals_[
                     individual_str
                 ] = self._combine_individual_stats(

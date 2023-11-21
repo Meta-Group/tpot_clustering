@@ -17,10 +17,11 @@ def xgb_reg(meta_features, sil, dbs, n_clusters):
         return float('inf')
 
 
-def rf_sv5_reg(meta_features, sil, dbs, n_clusters):
+def rf_sv5_reg(model_name, meta_features, sil, dbs, n_clusters):
     #try:
     model = RandomForestRegressor()
-    model = joblib.load("tpot/models/RFR_Sv5_b.joblib", mmap_mode='r')
+    # model = joblib.load("tpot/models/RFR_Sv5_b.joblib", mmap_mode='r')
+    model = joblib.load(f"tpot/models/{model_name}.joblib", mmap_mode='r')
     mf = meta_features.copy()
     mf.extend([sil, dbs, n_clusters])
     surrogate_score = model.predict([mf])[0]

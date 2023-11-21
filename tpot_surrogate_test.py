@@ -5,17 +5,19 @@ from sklearn.preprocessing import MinMaxScaler
 from pymfe.mfe import MFE
 import neptune
 
-dataset_name = "atom"
+# dataset_name = "dim2-clusters3-instances2000-overlap1e-06-1e-05-aspectref5-aspectmaxmin1-radius1-imbalance1-rep11"
+dataset_name = "dermatology"
+
 dataset = pd.read_csv(f"datasets/validation/{dataset_name}.csv")
 scaler = MinMaxScaler()
 normalized_data = scaler.fit_transform(dataset)
 normalized_df = pd.DataFrame(normalized_data, columns=dataset.columns)
 
 labels = pd.read_csv(f"datasets/cluster_labels/{dataset_name}.csv")
-labels = labels['y'].tolist()
+labels = labels['Removed_Column'].tolist()
 
-gen = 10
-pop = 20
+gen = 3
+pop = 5
 
 def extract_metafeatures(dataset):
     X = dataset.values
@@ -56,7 +58,7 @@ def extract_metafeatures(dataset):
 
     _meta_features = [value for key, value in zip(ft[0], ft[1]) if key in mfeatures]
     return _meta_features
-for i in range(10):
+for i in range(1):
 
     try:
         api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIwODNjNDRiNS02MDM4LTQ2NGEtYWQwMC00OGRhYjcwODc0ZDIifQ=="
@@ -67,7 +69,7 @@ for i in range(10):
             verbosity=2,
             config_dict=tpot.config.clustering_config_dict,
             n_jobs=-1,
-            # early_stop=int(gen*0.2)
+            early_stop=int(gen*0.2)
         )
         _meta_features = extract_metafeatures(dataset)
         run = neptune.init_run(project=project_name, api_token=api_token)
@@ -77,7 +79,7 @@ for i in range(10):
         run["pop"] = pop
         print(f"\n==================== TPOT CLUSTERING ==================== \n Dataset: {dataset_name} - Surrogate Function")
         
-        clusterer.fit(normalized_df, meta_features=_meta_features, labels_true=labels)
+        clusterer.fit(normalized_df, meta_features=_meta_features, labels_true=labels, model_name="2_ML2DAC")
         pipeline, scores, clusters, surrogate_score = clusterer.get_run_stats()
 
         print(f"\n---------------------------------------------------------\n")
@@ -88,16 +90,16 @@ for i in range(10):
         print(f"yhat: {surrogate_score}")
         print(f"gen: {gen}")
 
-        run["sil"] = scores['sil']
-        run["dbs"] = scores['dbs']
-        run["ari"] = scores['ari']
-        run["clusters"] = clusters
-        run["pipeline"] = pipeline
-        run["surrogate_score"] = surrogate_score
+        # run["sil"] = scores['sil']
+        # run["dbs"] = scores['dbs']
+        # run["ari"] = scores['ari']
+        # run["clusters"] = clusters
+        # run["pipeline"] = pipeline
+        # run["surrogate_score"] = surrogate_score
         
     except Exception as e:
-        run["error_msg"] = e
+        # run["error_msg"] = e
         print(f"{e}")
 
-    run.sync()
-    run.stop()
+    # run.sync()
+    # run.stop()
