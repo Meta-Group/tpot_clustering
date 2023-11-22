@@ -620,10 +620,10 @@ class TPOTBase(BaseEstimator):
                     self.arguments += arg_types
             self.operators_context = {
                 "make_pipeline": make_pipeline_func,
-                "make_union": make_union,
+                # "make_union": make_union,
                 # "StackingEstimator": StackingEstimator,
-                "FunctionTransformer": FunctionTransformer,
-                "copy": copy,
+                # "FunctionTransformer": FunctionTransformer,
+                # "copy": copy,
             }
             self._setup_pset()
             self._setup_toolbox()
@@ -912,6 +912,7 @@ class TPOTBase(BaseEstimator):
             self._memory = None
 
     def _update_top_pipeline(self):
+        print("update top pipeline")
         """Helper function to update the _optimized_pipeline field."""
         # Store the pipeline with the highest internal testing score
         if self._pareto_front:
@@ -924,6 +925,7 @@ class TPOTBase(BaseEstimator):
                     self._optimized_pipeline_score = pipeline_scores.wvalues[1]
 
             if not self._optimized_pipeline:
+                print("eval")
                 # pick one individual from evaluated pipeline for a error message
                 # eval_ind_list = list(self.evaluated_individuals_.keys())
                 # for pipeline, pipeline_scores in zip(
@@ -1641,12 +1643,14 @@ class TPOTBase(BaseEstimator):
 
             # number of individuals already evaluated in this generation
             num_eval_ind = len(result_score_list)
+
             self._update_evaluated_individuals_(
                 result_score_list,
                 eval_individuals_str[:num_eval_ind],
                 operator_counts,
                 stats_dicts,
             )
+
             for ind in individuals[:num_eval_ind]:
                 ind_str = str(ind)
                 ind.fitness.values = (
@@ -1654,8 +1658,8 @@ class TPOTBase(BaseEstimator):
                     self.evaluated_individuals_[ind_str]["internal_cv_score"],
                 )
             
-            # self._pareto_front.update(individuals[:num_eval_ind])
-            self._pareto_front = self._update(individuals[:num_eval_ind])
+            self._pareto_front.update(individuals[:num_eval_ind])
+            # self._update(individuals[:num_eval_ind])
             self._pop = population
             raise KeyboardInterrupt
         
@@ -1670,8 +1674,8 @@ class TPOTBase(BaseEstimator):
                 self.evaluated_individuals_[ind_str]["internal_cv_score"],
             )
         individuals = [ind for ind in population if not ind.fitness.valid]
-        # self._pareto_front.update(population)
-        self._update(population)
+        self._pareto_front.update(population)
+        # self._update(population)
         return population
     
     def _preprocess_individuals(self, individuals):

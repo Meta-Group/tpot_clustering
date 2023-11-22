@@ -183,7 +183,6 @@ def initialize_stats_dict(individual):
     individual.statistics["crossover_count"] = 0
     individual.statistics["predecessor"] = ("ROOT",)
 
-
 def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
                    stats=None, halloffame=None, verbose=0,
                    per_generation_function=None, log_file=None):
@@ -239,71 +238,43 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     for ind in population:
         initialize_stats_dict(ind)
 
-    population[:] = toolbox.evaluate(population,generation=0)
+    population[:] = toolbox.evaluate(population, generation=0)
+
     record = stats.compile(population) if stats is not None else {}
     logbook.record(gen=0, nevals=len(population), **record)
 
     # Begin the generational process
     for gen in range(1, ngen + 1):
-        try:
+        # Vary the population
+        offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
 
-            # Vary the population
-            offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
-            [offspring.append(hof) for hof in halloffame if hof not in offspring]
-        except Exception as e:
-            print(f"Variation Error {e}")
+
         # Update generation statistic for all individuals which have invalid 'generation' stats
         # This hold for individuals that have been altered in the varOr function
-        try:
-            for ind in offspring:
-                if ind.statistics['generation'] == 'INVALID':
-                    ind.statistics['generation'] = gen
-        except:
-            print(f"Erro verificacao {e}")
-        
-        try:
-            for ind in offspring:
-                del ind.fitness.values
-        except Exception as e:
-            print(f"Erro {e}")
+        for ind in offspring:
+            if ind.statistics['generation'] == 'INVALID':
+                ind.statistics['generation'] = gen
 
-        try:
-            # Evaluate the individuals with an invalid fitness
-            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        except Exception as e:
-            print(f"Evaluation {e}")
-        
-        try:
-            offspring = toolbox.evaluate(offspring,generation=gen)
-        except Exception as e:
-            print(f"Error Evaluation")
+        # Evaluate the individuals with an invalid fitness
+        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+
+        offspring = toolbox.evaluate(offspring, generation=gen)
+
         # Select the next generation population
-        try:
-            population[:] = toolbox.select(population + offspring, mu)
-        except Exception as e:
-            print(f"Selection Error {e}")
-            
-            # [print(f"Offspring:{ind}") for ind in offspring]
-            # print(f"Mu:{mu}")
-        
-        # [print(f"\n>>> Current HOF GP: \n{hof}") for hof in halloffame]
-        
-        # print("\n======================================================================================================================\n")
+        population[:] = toolbox.select(population + offspring, mu)
 
-
+        # pbar process
         if not pbar.disable:
             # Print only the best individual fitness
             if verbose == 2:
-                try:
-                    high_score = max(halloffame.keys[x] \
-                        for x in range(len(halloffame.keys)))
-                    pbar.write('\nGen: {0} - '
-                                'Best Surrogate Score: {1} Complexity: {2} - Pipeline: {3}'.format(gen,
-                                                            high_score.wvalues[1], high_score.wvalues[0], toolbox.compile(halloffame[0])),
+                high_score = max(halloffame.keys[x].wvalues[1] \
+                    for x in range(len(halloffame.keys)))
+                pbar.write('\nGeneration {0} - Current '
+                            'best internal CV score: {1}'.format(gen,
+                                                        high_score),
 
-                                file=log_file)
-                except Exception as e:
-                    print(f"HOF error {e}")    
+                            file=log_file)
+
             # Print the entire Pareto front
             elif verbose == 3:
                 pbar.write('\nGeneration {} - '
@@ -317,20 +288,165 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
                         ),
                         file=log_file
                     )
-        try:
-            # after each population save a periodic pipeline
-            if per_generation_function is not None:
-                per_generation_function(gen)
-        except Exception as e:
-            print(f"Checkpoint error {e}")
-        
-        try:
-            # Update the statistics with the new population
-            record = stats.compile(population) if stats is not None else {}
-            logbook.record(gen=gen, nevals=len(invalid_ind), **record)
-        except Exception as e:
-            print(f"Error Longbook {e}")
+
+        # after each population save a periodic pipeline
+        if per_generation_function is not None:
+            per_generation_function(gen)
+
+        # Update the statistics with the new population
+        record = stats.compile(population) if stats is not None else {}
+        logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+
     return population, logbook
+
+# def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
+#                    stats=None, halloffame=None, verbose=0,
+#                    per_generation_function=None, log_file=None):
+#     """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
+#     :param population: A list of individuals.
+#     :param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution
+#                     operators.
+#     :param mu: The number of individuals to select for the next generation.
+#     :param lambda\_: The number of children to produce at each generation.
+#     :param cxpb: The probability that an offspring is produced by crossover.
+#     :param mutpb: The probability that an offspring is produced by mutation.
+#     :param ngen: The number of generation.
+#     :param pbar: processing bar
+#     :param stats: A :class:`~deap.tools.Statistics` object that is updated
+#                   inplace, optional.
+#     :param halloffame: A :class:`~deap.tools.HallOfFame` object that will
+#                        contain the best individuals, optional.
+#     :param verbose: Whether or not to log the statistics.
+#     :param per_generation_function: if supplied, call this function before each generation
+#                             used by tpot to save best pipeline before each new generation
+#     :param log_file: io.TextIOWrapper or io.StringIO, optional (defaul: sys.stdout)
+#     :returns: The final population
+#     :returns: A class:`~deap.tools.Logbook` with the statistics of the
+#               evolution.
+#     The algorithm takes in a population and evolves it in place using the
+#     :func:`varOr` function. It returns the optimized population and a
+#     :class:`~deap.tools.Logbook` with the statistics of the evolution. The
+#     logbook will contain the generation number, the number of evalutions for
+#     each generation and the statistics if a :class:`~deap.tools.Statistics` is
+#     given as argument. The *cxpb* and *mutpb* arguments are passed to the
+#     :func:`varOr` function. The pseudocode goes as follow ::
+#         evaluate(population)
+#         for g in range(ngen):
+#             offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
+#             evaluate(offspring)
+#             population = select(population + offspring, mu)
+#     First, the individuals having an invalid fitness are evaluated. Second,
+#     the evolutionary loop begins by producing *lambda_* offspring from the
+#     population, the offspring are generated by the :func:`varOr` function. The
+#     offspring are then evaluated and the next generation population is
+#     selected from both the offspring **and** the population. Finally, when
+#     *ngen* generations are done, the algorithm returns a tuple with the final
+#     population and a :class:`~deap.tools.Logbook` of the evolution.
+#     This function expects :meth:`toolbox.mate`, :meth:`toolbox.mutate`,
+#     :meth:`toolbox.select` and :meth:`toolbox.evaluate` aliases to be
+#     registered in the toolbox. This algorithm uses the :func:`varOr`
+#     variation.
+#     """
+#     logbook = tools.Logbook()
+#     logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
+
+#     # Initialize statistics dict for the individuals in the population, to keep track of mutation/crossover operations and predecessor relations
+#     for ind in population:
+#         initialize_stats_dict(ind)
+
+#     population[:] = toolbox.evaluate(population,generation=0)
+#     record = stats.compile(population) if stats is not None else {}
+#     logbook.record(gen=0, nevals=len(population), **record)
+
+#     # Begin the generational process
+#     for gen in range(1, ngen + 1):
+#         try:
+
+#             # Vary the population
+#             offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
+#             [offspring.append(hof) for hof in halloffame if hof not in offspring]
+#         except Exception as e:
+#             print(f"Variation Error {e}")
+#         # Update generation statistic for all individuals which have invalid 'generation' stats
+#         # This hold for individuals that have been altered in the varOr function
+#         try:
+#             for ind in offspring:
+#                 if ind.statistics['generation'] == 'INVALID':
+#                     ind.statistics['generation'] = gen
+#         except:
+#             print(f"Erro verificacao {e}")
+        
+#         try:
+#             for ind in offspring:
+#                 del ind.fitness.values
+#         except Exception as e:
+#             print(f"Erro {e}")
+
+#         try:
+#             # Evaluate the individuals with an invalid fitness
+#             invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+#         except Exception as e:
+#             print(f"Evaluation {e}")
+        
+#         try:
+#             offspring = toolbox.evaluate(offspring,generation=gen)
+#         except Exception as e:
+#             print(f"Error Evaluation {e}")
+#             break
+#         # Select the next generation population
+#         try:
+#             population[:] = toolbox.select(population + offspring, mu)
+#         except Exception as e:
+#             print(f"Selection Error {e}")
+            
+#             # [print(f"Offspring:{ind}") for ind in offspring]
+#             # print(f"Mu:{mu}")
+        
+#         # [print(f"\n>>> Current HOF GP: \n{hof}") for hof in halloffame]
+        
+#         # print("\n======================================================================================================================\n")
+
+
+#         if not pbar.disable:
+#             # Print only the best individual fitness
+#             if verbose == 2:
+#                 try:
+#                     high_score = max(halloffame.keys[x] \
+#                         for x in range(len(halloffame.keys)))
+#                     pbar.write('\nGen: {0} - '
+#                                 'Best Surrogate Score: {1} Complexity: {2} - Pipeline: {3}'.format(gen,
+#                                                             high_score.wvalues[1], high_score.wvalues[0], toolbox.compile(halloffame[0])),
+
+#                                 file=log_file)
+#                 except Exception as e:
+#                     print(f"HOF error {e}")    
+#             # Print the entire Pareto front
+#             elif verbose == 3:
+#                 pbar.write('\nGeneration {} - '
+#                             'Current Pareto front scores:'.format(gen),
+#                             file=log_file)
+#                 for pipeline, pipeline_scores in zip(halloffame.items, reversed(halloffame.keys)):
+#                     pbar.write('\n{}\t{}\t{}'.format(
+#                             int(pipeline_scores.wvalues[0]),
+#                             pipeline_scores.wvalues[1],
+#                             pipeline
+#                         ),
+#                         file=log_file
+#                     )
+#         try:
+#             # after each population save a periodic pipeline
+#             if per_generation_function is not None:
+#                 per_generation_function(gen)
+#         except Exception as e:
+#             print(f"Checkpoint error {e}")
+        
+#         try:
+#             # Update the statistics with the new population
+#             record = stats.compile(population) if stats is not None else {}
+#             logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+#         except Exception as e:
+#             print(f"Error Longbook {e}")
+#     return population, logbook
 
 
 def cxOnePoint(ind1, ind2):
