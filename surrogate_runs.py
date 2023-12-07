@@ -7,8 +7,8 @@ import json
 from pymfe.mfe import MFE
 from sklearn.preprocessing import MinMaxScaler
 
-model_name = "0_Biagio"
-collection_name = "biagio_median"
+model_name = "3_ML2DAC"
+collection_name = "ml2dac_median"
 
 def extract_metafeatures(dataset):
     X = dataset.values
